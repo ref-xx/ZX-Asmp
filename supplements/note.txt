@@ -1,0 +1,26 @@
+Hello forever XIII!
+
+aSMP demo - 48k only
+Tested on real 48k with Divide and various time sensitive emulators: Specemu, Ziggy & Zx Spin.
+
+What's this?
+This is a proof of concept demo for working around the limit of 18 character wide multicolour screen. it's called aSMP ("A Selective Multicolour Picture"!) Last year I got an idea of breaking 18 mlt column limit of zx spectrum. I wrote a simple roadmap on wos forums, and we decided, in theory, it might be possible. This week, I started coding a tool for conversion, aiming for my fav demoparty, forever. Sadly the tool is not finished, but it converts just fine. This is the result of this coding session. 
+
+The picture is my testing picture when I work on the idea. I couldn't find time to draw unique pixels for this mode's debut, sorry for it's a modified convert picture. 
+
+Nothing fancy really, but this mode can scatter multicolour blocks anywhere on screen, thus enhancing a standard blocky display. I will release the conversion tool (windows based) very soon (with 128k support!)
+
+This is a rush release for forever, 
+thank you for reading this!
+
+For more information please read the blog post. 
+http://arda.kisafilm.org/blog/?p=726
+(the idea wastly improved but concept is still very similar)
+
+AD: http://cgc.zx.gen.tr don't forget to participate csscgc 2012 crap game compo!!!
+
+ref/crescent
+March 2012
+
+
+
