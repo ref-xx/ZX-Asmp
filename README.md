@@ -26,7 +26,7 @@ Asmp is essentially a proof-of-concept project, not a converter. Asmp can
 produce executable graphics file without 18 column limitation so you can 
 enjoy a mlt image in full screen on a regular speccy!
 
-The Asmp generator program:
+The Asmp creator program:
 
 - Takes an MLT file
 - Calculates how many color changes are required on each raster line
@@ -51,11 +51,11 @@ As a result, an Asmp output is not a standard image but actually executable
 machine code. In this form, it falls under the category of realtime
 graphics.
 
-Requirements
+Recommended Tools
 ------------
 
-To use Asmp outputs, you need the following files:
-
+To use Asmp outputs, you need the following files based on your output preferences.
+(asmp will work and produce asm files without those)
 - zx0.exe
 - zx7.exe
 - megalz.exe
