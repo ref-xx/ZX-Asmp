@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("");
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("");
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.textBox8 = new System.Windows.Forms.TextBox();
@@ -43,6 +43,7 @@
             this.label23 = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.chkNotToggle = new System.Windows.Forms.CheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.textBox13 = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
@@ -97,6 +98,10 @@
             this.button10 = new System.Windows.Forms.Button();
             this.textBox7 = new System.Windows.Forms.TextBox();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.label28 = new System.Windows.Forms.Label();
+            this.btnSetPalette = new System.Windows.Forms.Button();
+            this.txtHiVal = new System.Windows.Forms.TextBox();
+            this.txtLowVal = new System.Windows.Forms.TextBox();
             this.label27 = new System.Windows.Forms.Label();
             this.trackAlpha = new System.Windows.Forms.TrackBar();
             this.label25 = new System.Windows.Forms.Label();
@@ -190,6 +195,9 @@
             this.bitmapToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.sCRToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.tapToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
+            this.recentyOpenedFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.clearRecentsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -206,14 +214,15 @@
             this.textZX7 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.txtZX0 = new System.Windows.Forms.TextBox();
-            this.recentyOpenedFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.clearRecentsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
-            this.txtLowVal = new System.Windows.Forms.TextBox();
-            this.txtHiVal = new System.Windows.Forms.TextBox();
-            this.btnSetPalette = new System.Windows.Forms.Button();
-            this.label28 = new System.Windows.Forms.Label();
-            this.chkNotToggle = new System.Windows.Forms.CheckBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.txtLastPickedRaster = new System.Windows.Forms.TextBox();
+            this.chkBalanceAll = new System.Windows.Forms.CheckBox();
+            this.label29 = new System.Windows.Forms.Label();
+            this.chkIgnoreBright = new System.Windows.Forms.CheckBox();
+            this.chkIgnorePixel = new System.Windows.Forms.CheckBox();
+            this.tabFix = new System.Windows.Forms.TabPage();
+            this.label30 = new System.Windows.Forms.Label();
+            this.chkSimilarColor = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
             this.tabControl1.SuspendLayout();
@@ -233,6 +242,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
             this.menuStrip1.SuspendLayout();
+            this.groupBox5.SuspendLayout();
+            this.tabFix.SuspendLayout();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -361,11 +372,12 @@
             this.tabControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.tabControl1.Controls.Add(this.tabFix);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage4);
-            this.tabControl1.Controls.Add(this.tabPage5);
             this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage5);
             this.tabControl1.Controls.Add(this.tabPage6);
             this.tabControl1.Controls.Add(this.tabPage7);
             this.tabControl1.Location = new System.Drawing.Point(6, 134);
@@ -397,13 +409,22 @@
             this.tabPage3.Controls.Add(this.radioButton5);
             this.tabPage3.Controls.Add(this.radioButton1);
             this.tabPage3.Controls.Add(this.radioButton2);
-            this.tabPage3.Controls.Add(this.groupBox1);
             this.tabPage3.Location = new System.Drawing.Point(4, 40);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Size = new System.Drawing.Size(281, 528);
             this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Edit & Fix";
+            this.tabPage3.Text = "Edit";
             this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // chkNotToggle
+            // 
+            this.chkNotToggle.AutoSize = true;
+            this.chkNotToggle.Location = new System.Drawing.Point(159, 241);
+            this.chkNotToggle.Name = "chkNotToggle";
+            this.chkNotToggle.Size = new System.Drawing.Size(88, 17);
+            this.chkNotToggle.TabIndex = 36;
+            this.chkNotToggle.Text = "Copy Instead";
+            this.chkNotToggle.UseVisualStyleBackColor = true;
             // 
             // groupBox4
             // 
@@ -457,7 +478,7 @@
             this.groupBox3.Controls.Add(this.button5);
             this.groupBox3.Location = new System.Drawing.Point(10, 408);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(258, 106);
+            this.groupBox3.Size = new System.Drawing.Size(127, 106);
             this.groupBox3.TabIndex = 33;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Quick Operations";
@@ -664,27 +685,25 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.txtBalance);
             this.groupBox1.Controls.Add(this.button18);
             this.groupBox1.Controls.Add(this.groupBox2);
             this.groupBox1.Controls.Add(this.button7);
-            this.groupBox1.Controls.Add(this.btnLoadBalance);
             this.groupBox1.Controls.Add(this.button4);
             this.groupBox1.Controls.Add(this.button2);
             this.groupBox1.Controls.Add(this.button3);
-            this.groupBox1.Location = new System.Drawing.Point(10, 266);
+            this.groupBox1.Location = new System.Drawing.Point(12, 14);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(258, 136);
+            this.groupBox1.Size = new System.Drawing.Size(257, 137);
             this.groupBox1.TabIndex = 27;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Tools";
             // 
             // txtBalance
             // 
-            this.txtBalance.Location = new System.Drawing.Point(134, 62);
+            this.txtBalance.Location = new System.Drawing.Point(216, 13);
             this.txtBalance.MaxLength = 2;
             this.txtBalance.Name = "txtBalance";
-            this.txtBalance.Size = new System.Drawing.Size(21, 20);
+            this.txtBalance.Size = new System.Drawing.Size(27, 20);
             this.txtBalance.TabIndex = 36;
             this.txtBalance.Text = "11";
             // 
@@ -719,9 +738,9 @@
             // 
             // btnLoadBalance
             // 
-            this.btnLoadBalance.Location = new System.Drawing.Point(161, 60);
+            this.btnLoadBalance.Location = new System.Drawing.Point(134, 175);
             this.btnLoadBalance.Name = "btnLoadBalance";
-            this.btnLoadBalance.Size = new System.Drawing.Size(88, 23);
+            this.btnLoadBalance.Size = new System.Drawing.Size(114, 23);
             this.btnLoadBalance.TabIndex = 30;
             this.btnLoadBalance.Text = "Balance";
             this.btnLoadBalance.UseVisualStyleBackColor = true;
@@ -780,12 +799,12 @@
             this.tabPage2.Controls.Add(this.button11);
             this.tabPage2.Controls.Add(this.button10);
             this.tabPage2.Controls.Add(this.textBox7);
-            this.tabPage2.Location = new System.Drawing.Point(4, 40);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(281, 528);
+            this.tabPage2.Size = new System.Drawing.Size(281, 546);
             this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Generation Settings";
+            this.tabPage2.Text = "Gen Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
             // chkUseBank7
@@ -836,7 +855,7 @@
             // button25
             // 
             this.button25.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button25.Location = new System.Drawing.Point(5, 403);
+            this.button25.Location = new System.Drawing.Point(5, 421);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(112, 23);
             this.button25.TabIndex = 15;
@@ -860,7 +879,7 @@
             // button6
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.Location = new System.Drawing.Point(182, 403);
+            this.button6.Location = new System.Drawing.Point(182, 421);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(93, 23);
             this.button6.TabIndex = 2;
@@ -970,7 +989,7 @@
             // button11
             // 
             this.button11.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button11.Location = new System.Drawing.Point(123, 403);
+            this.button11.Location = new System.Drawing.Point(123, 421);
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(53, 23);
             this.button11.TabIndex = 14;
@@ -1000,7 +1019,7 @@
             this.textBox7.Multiline = true;
             this.textBox7.Name = "textBox7";
             this.textBox7.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox7.Size = new System.Drawing.Size(268, 254);
+            this.textBox7.Size = new System.Drawing.Size(268, 272);
             this.textBox7.TabIndex = 12;
             this.textBox7.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textBox7_MouseClick);
             // 
@@ -1026,13 +1045,48 @@
             this.tabPage4.Controls.Add(this.listBox1);
             this.tabPage4.Controls.Add(this.checkBox1);
             this.tabPage4.Controls.Add(this.textBox5);
-            this.tabPage4.Location = new System.Drawing.Point(4, 40);
+            this.tabPage4.Location = new System.Drawing.Point(4, 22);
             this.tabPage4.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Size = new System.Drawing.Size(281, 528);
+            this.tabPage4.Size = new System.Drawing.Size(281, 546);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "View Preferences";
             this.tabPage4.UseVisualStyleBackColor = true;
+            // 
+            // label28
+            // 
+            this.label28.AutoSize = true;
+            this.label28.Location = new System.Drawing.Point(9, 251);
+            this.label28.Name = "label28";
+            this.label28.Size = new System.Drawing.Size(43, 13);
+            this.label28.TabIndex = 47;
+            this.label28.Text = "Palette:";
+            // 
+            // btnSetPalette
+            // 
+            this.btnSetPalette.Location = new System.Drawing.Point(182, 246);
+            this.btnSetPalette.Name = "btnSetPalette";
+            this.btnSetPalette.Size = new System.Drawing.Size(93, 23);
+            this.btnSetPalette.TabIndex = 46;
+            this.btnSetPalette.Text = "Set Palette";
+            this.btnSetPalette.UseVisualStyleBackColor = true;
+            this.btnSetPalette.Click += new System.EventHandler(this.btnSetPalette_Click);
+            // 
+            // txtHiVal
+            // 
+            this.txtHiVal.Location = new System.Drawing.Point(135, 248);
+            this.txtHiVal.Name = "txtHiVal";
+            this.txtHiVal.Size = new System.Drawing.Size(39, 20);
+            this.txtHiVal.TabIndex = 45;
+            this.txtHiVal.Text = "235";
+            // 
+            // txtLowVal
+            // 
+            this.txtLowVal.Location = new System.Drawing.Point(87, 248);
+            this.txtLowVal.Name = "txtLowVal";
+            this.txtLowVal.Size = new System.Drawing.Size(39, 20);
+            this.txtLowVal.TabIndex = 44;
+            this.txtLowVal.Text = "210";
             // 
             // label27
             // 
@@ -1195,7 +1249,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(3, 302);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(188, 212);
+            this.listBox1.Size = new System.Drawing.Size(188, 225);
             this.listBox1.TabIndex = 16;
             this.listBox1.Visible = false;
             // 
@@ -1765,8 +1819,8 @@
             this.listView1.FullRowSelect = true;
             this.listView1.HideSelection = false;
             this.listView1.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem3,
-            listViewItem4});
+            listViewItem1,
+            listViewItem2});
             this.listView1.Location = new System.Drawing.Point(369, 424);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(261, 174);
@@ -1845,33 +1899,33 @@
             // newToolStripMenuItem
             // 
             this.newToolStripMenuItem.Name = "newToolStripMenuItem";
-            this.newToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.newToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.newToolStripMenuItem.Text = "New";
             this.newToolStripMenuItem.Click += new System.EventHandler(this.newToolStripMenuItem_Click);
             // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(133, 6);
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.openToolStripMenuItem.Text = "Open...";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.saveToolStripMenuItem.Text = "Save...";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // toolStripMenuItem3
             // 
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(133, 6);
             // 
             // ımportToolStripMenuItem
             // 
@@ -1881,7 +1935,7 @@
             this.sCRToolStripMenuItem,
             this.mLTToolStripMenuItem});
             this.ımportToolStripMenuItem.Name = "ımportToolStripMenuItem";
-            this.ımportToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.ımportToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.ımportToolStripMenuItem.Text = "Import";
             // 
             // bitmapToolStripMenuItem
@@ -1920,7 +1974,7 @@
             this.sCRToolStripMenuItem1,
             this.tapToolStripMenuItem});
             this.exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            this.exportToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exportToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.exportToolStripMenuItem.Text = "Export";
             // 
             // bitmapToolStripMenuItem1
@@ -1944,15 +1998,35 @@
             this.tapToolStripMenuItem.Text = "Tap";
             this.tapToolStripMenuItem.Click += new System.EventHandler(this.tapToolStripMenuItem_Click);
             // 
+            // toolStripMenuItem5
+            // 
+            this.toolStripMenuItem5.Name = "toolStripMenuItem5";
+            this.toolStripMenuItem5.Size = new System.Drawing.Size(133, 6);
+            // 
+            // recentyOpenedFilesToolStripMenuItem
+            // 
+            this.recentyOpenedFilesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.clearRecentsToolStripMenuItem});
+            this.recentyOpenedFilesToolStripMenuItem.Name = "recentyOpenedFilesToolStripMenuItem";
+            this.recentyOpenedFilesToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
+            this.recentyOpenedFilesToolStripMenuItem.Text = "Recent Files";
+            // 
+            // clearRecentsToolStripMenuItem
+            // 
+            this.clearRecentsToolStripMenuItem.Name = "clearRecentsToolStripMenuItem";
+            this.clearRecentsToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
+            this.clearRecentsToolStripMenuItem.Text = "Clear Recents";
+            this.clearRecentsToolStripMenuItem.Click += new System.EventHandler(this.clearRecentsToolStripMenuItem_Click_1);
+            // 
             // toolStripMenuItem4
             // 
             this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(177, 6);
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(133, 6);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(136, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -2036,7 +2110,7 @@
             // usageToolStripMenuItem
             // 
             this.usageToolStripMenuItem.Name = "usageToolStripMenuItem";
-            this.usageToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usageToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
             this.usageToolStripMenuItem.Text = "Usage";
             this.usageToolStripMenuItem.Click += new System.EventHandler(this.usageToolStripMenuItem_Click);
             // 
@@ -2060,70 +2134,109 @@
             this.txtZX0.Text = resources.GetString("txtZX0.Text");
             this.txtZX0.Visible = false;
             // 
-            // recentyOpenedFilesToolStripMenuItem
+            // groupBox5
             // 
-            this.recentyOpenedFilesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.clearRecentsToolStripMenuItem});
-            this.recentyOpenedFilesToolStripMenuItem.Name = "recentyOpenedFilesToolStripMenuItem";
-            this.recentyOpenedFilesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.recentyOpenedFilesToolStripMenuItem.Text = "Recent Files";
+            this.groupBox5.Controls.Add(this.chkSimilarColor);
+            this.groupBox5.Controls.Add(this.label30);
+            this.groupBox5.Controls.Add(this.chkIgnorePixel);
+            this.groupBox5.Controls.Add(this.chkIgnoreBright);
+            this.groupBox5.Controls.Add(this.label29);
+            this.groupBox5.Controls.Add(this.chkBalanceAll);
+            this.groupBox5.Controls.Add(this.txtLastPickedRaster);
+            this.groupBox5.Controls.Add(this.txtBalance);
+            this.groupBox5.Controls.Add(this.btnLoadBalance);
+            this.groupBox5.Location = new System.Drawing.Point(12, 157);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(257, 211);
+            this.groupBox5.TabIndex = 37;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Balance";
             // 
-            // clearRecentsToolStripMenuItem
+            // txtLastPickedRaster
             // 
-            this.clearRecentsToolStripMenuItem.Name = "clearRecentsToolStripMenuItem";
-            this.clearRecentsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.clearRecentsToolStripMenuItem.Text = "Clear Recents";
-            this.clearRecentsToolStripMenuItem.Click += new System.EventHandler(this.clearRecentsToolStripMenuItem_Click_1);
+            this.txtLastPickedRaster.Location = new System.Drawing.Point(217, 39);
+            this.txtLastPickedRaster.MaxLength = 2;
+            this.txtLastPickedRaster.Name = "txtLastPickedRaster";
+            this.txtLastPickedRaster.Size = new System.Drawing.Size(26, 20);
+            this.txtLastPickedRaster.TabIndex = 37;
+            this.txtLastPickedRaster.Text = "192";
             // 
-            // toolStripMenuItem5
+            // chkBalanceAll
             // 
-            this.toolStripMenuItem5.Name = "toolStripMenuItem5";
-            this.toolStripMenuItem5.Size = new System.Drawing.Size(177, 6);
+            this.chkBalanceAll.AutoSize = true;
+            this.chkBalanceAll.Checked = true;
+            this.chkBalanceAll.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkBalanceAll.Location = new System.Drawing.Point(76, 152);
+            this.chkBalanceAll.Name = "chkBalanceAll";
+            this.chkBalanceAll.Size = new System.Drawing.Size(131, 17);
+            this.chkBalanceAll.TabIndex = 38;
+            this.chkBalanceAll.Text = "Balance whole screen";
+            this.chkBalanceAll.UseVisualStyleBackColor = true;
             // 
-            // txtLowVal
+            // label29
             // 
-            this.txtLowVal.Location = new System.Drawing.Point(87, 248);
-            this.txtLowVal.Name = "txtLowVal";
-            this.txtLowVal.Size = new System.Drawing.Size(39, 20);
-            this.txtLowVal.TabIndex = 44;
-            this.txtLowVal.Text = "210";
+            this.label29.AutoSize = true;
+            this.label29.Location = new System.Drawing.Point(73, 16);
+            this.label29.Name = "label29";
+            this.label29.Size = new System.Drawing.Size(139, 13);
+            this.label29.TabIndex = 39;
+            this.label29.Text = "Raster Max MLT Threshold:";
             // 
-            // txtHiVal
+            // chkIgnoreBright
             // 
-            this.txtHiVal.Location = new System.Drawing.Point(135, 248);
-            this.txtHiVal.Name = "txtHiVal";
-            this.txtHiVal.Size = new System.Drawing.Size(39, 20);
-            this.txtHiVal.TabIndex = 45;
-            this.txtHiVal.Text = "235";
+            this.chkIgnoreBright.AutoSize = true;
+            this.chkIgnoreBright.Checked = true;
+            this.chkIgnoreBright.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkIgnoreBright.Location = new System.Drawing.Point(76, 97);
+            this.chkIgnoreBright.Name = "chkIgnoreBright";
+            this.chkIgnoreBright.Size = new System.Drawing.Size(105, 17);
+            this.chkIgnoreBright.TabIndex = 40;
+            this.chkIgnoreBright.Text = "Ignore Brighness";
+            this.chkIgnoreBright.UseVisualStyleBackColor = true;
             // 
-            // btnSetPalette
+            // chkIgnorePixel
             // 
-            this.btnSetPalette.Location = new System.Drawing.Point(182, 246);
-            this.btnSetPalette.Name = "btnSetPalette";
-            this.btnSetPalette.Size = new System.Drawing.Size(93, 23);
-            this.btnSetPalette.TabIndex = 46;
-            this.btnSetPalette.Text = "Set Palette";
-            this.btnSetPalette.UseVisualStyleBackColor = true;
-            this.btnSetPalette.Click += new System.EventHandler(this.btnSetPalette_Click);
+            this.chkIgnorePixel.AutoSize = true;
+            this.chkIgnorePixel.Checked = true;
+            this.chkIgnorePixel.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkIgnorePixel.Location = new System.Drawing.Point(76, 74);
+            this.chkIgnorePixel.Name = "chkIgnorePixel";
+            this.chkIgnorePixel.Size = new System.Drawing.Size(134, 17);
+            this.chkIgnorePixel.TabIndex = 41;
+            this.chkIgnorePixel.Text = "Ignore single pixel cells";
+            this.chkIgnorePixel.UseVisualStyleBackColor = true;
             // 
-            // label28
+            // tabFix
             // 
-            this.label28.AutoSize = true;
-            this.label28.Location = new System.Drawing.Point(9, 251);
-            this.label28.Name = "label28";
-            this.label28.Size = new System.Drawing.Size(43, 13);
-            this.label28.TabIndex = 47;
-            this.label28.Text = "Palette:";
+            this.tabFix.Controls.Add(this.groupBox5);
+            this.tabFix.Controls.Add(this.groupBox1);
+            this.tabFix.Location = new System.Drawing.Point(4, 40);
+            this.tabFix.Name = "tabFix";
+            this.tabFix.Size = new System.Drawing.Size(281, 528);
+            this.tabFix.TabIndex = 7;
+            this.tabFix.Text = "fix";
+            this.tabFix.UseVisualStyleBackColor = true;
             // 
-            // chkNotToggle
+            // label30
             // 
-            this.chkNotToggle.AutoSize = true;
-            this.chkNotToggle.Location = new System.Drawing.Point(159, 241);
-            this.chkNotToggle.Name = "chkNotToggle";
-            this.chkNotToggle.Size = new System.Drawing.Size(88, 17);
-            this.chkNotToggle.TabIndex = 36;
-            this.chkNotToggle.Text = "Copy Instead";
-            this.chkNotToggle.UseVisualStyleBackColor = true;
+            this.label30.AutoSize = true;
+            this.label30.Location = new System.Drawing.Point(73, 42);
+            this.label30.Name = "label30";
+            this.label30.Size = new System.Drawing.Size(122, 13);
+            this.label30.TabIndex = 42;
+            this.label30.Text = "Balance Picked  Raster:";
+            // 
+            // chkSimilarColor
+            // 
+            this.chkSimilarColor.AutoSize = true;
+            this.chkSimilarColor.Checked = true;
+            this.chkSimilarColor.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkSimilarColor.Location = new System.Drawing.Point(76, 120);
+            this.chkSimilarColor.Name = "chkSimilarColor";
+            this.chkSimilarColor.Size = new System.Drawing.Size(118, 17);
+            this.chkSimilarColor.TabIndex = 43;
+            this.chkSimilarColor.Text = "Ignore similar colors";
+            this.chkSimilarColor.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -2159,7 +2272,6 @@
             this.groupBox3.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
             this.tabPage4.ResumeLayout(false);
@@ -2177,6 +2289,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
+            this.tabFix.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -2366,6 +2481,15 @@
         private System.Windows.Forms.TextBox txtHiVal;
         private System.Windows.Forms.TextBox txtLowVal;
         private System.Windows.Forms.CheckBox chkNotToggle;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.TextBox txtLastPickedRaster;
+        private System.Windows.Forms.CheckBox chkIgnorePixel;
+        private System.Windows.Forms.CheckBox chkIgnoreBright;
+        private System.Windows.Forms.Label label29;
+        private System.Windows.Forms.CheckBox chkBalanceAll;
+        private System.Windows.Forms.TabPage tabFix;
+        private System.Windows.Forms.CheckBox chkSimilarColor;
+        private System.Windows.Forms.Label label30;
     }
 }
 
