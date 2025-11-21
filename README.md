@@ -3,7 +3,7 @@ ZX Spectrum ASMP (c) 2010 Ref / Ret
 
 Asmp is a realtime image generator for Original Zx Spectrum Computers for 48k to +3 models.
 
-ASMP README
+See https://arda.kisafilm.org/blog/?p=726&lang=en blogpost for more insights.
 
 
 Overview
