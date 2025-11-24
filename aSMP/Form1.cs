@@ -50,6 +50,8 @@ namespace aSMP
         Color mltcol = Color.Orange;
         int UIalpha = 160;
 
+        Bitmap originalImage; //holds original image for re-processing
+
         bool optShowMLTadresses = true;
         
         string compressedbitmap = "";
@@ -96,6 +98,13 @@ namespace aSMP
         int rgi = 0, rgp = 7, rgm = 56, pixelx = 0, pixely = 0, px = 0, py = 0, qptr = 0;
         int[,] safecycle = new int[32, 192]; //a pre-calc table that holds when ula beam scans a coordinate. An attribute must be updated before this cycle.
 
+        // Seçim alanı için değişkenler
+        private Point selectionStart = Point.Empty;
+        private Point selectionEnd = Point.Empty;
+        private bool isSelectionActive = false; // Seçim yapılıyor mu?
+        private bool hasValidSelection = false; // Geçerli bir seçim var mı?
+
+
         int BalanceThreshold = 8; //raster limit for balancing.
 
         //ULA Emulator:
@@ -118,8 +127,9 @@ namespace aSMP
         int codeLineIndex = 0; //when emulating, last processed line in code text file
 
         bool lastcomputedmarks = false;
+        bool noProcess=false;
 
-        
+
         bool optDraggingNow = false;
         bool isHeldDown = false;
 
@@ -5312,8 +5322,28 @@ namespace aSMP
             
         }
 
-
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isSelectionActive)
+            {
+                selectionEnd = e.Location;
+                pictureBox1.Invalidate(); // Seçim dikdörtgenini güncellemek için tekrar çizdir
+            }
+            else
+            {
+                // Mevcut MouseMove kodlarınız (cursor vs.)
+                /* Buraya mevcut kodlarınız gelecek */
+                if (radioButton4.Checked || optDraggingNow)
+                {
+                    // Dragging logic...
+                }
+                else
+                {
+                    move_cursor(e.X, e.Y, (int)e.Button);
+                }
+            }
+        }
+        private void pictureBox1_MouseMove2(object sender, MouseEventArgs e)
         {
             
             /*
@@ -5339,8 +5369,31 @@ namespace aSMP
             
 
         }
-
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            // SHIFT tuşuna basılıysa seçim moduna gir
+            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+            {
+                isSelectionActive = true;
+                hasValidSelection = false;
+                selectionStart = e.Location;
+                selectionEnd = e.Location;
+                pictureBox1.Invalidate(); // Çizimi tetikle
+            }
+            else
+            {
+                // Mevcut boyama/cursor kodlarınız burada kalacak
+                if (!(radioButton4.Checked || optDraggingNow)) move_cursor(e.X, e.Y, (int)e.Button);
+                if (e.Button == MouseButtons.Left)
+                {
+                    isHeldDown = true;
+                    px = e.X;
+                    py = e.Y;
+                }
+            }
+        }
+
+        private void pictureBox1_MouseDown2(object sender, MouseEventArgs e)
         {
             if (!(radioButton4.Checked || optDraggingNow)) move_cursor(e.X, e.Y, (int)e.Button);
 
@@ -7001,6 +7054,256 @@ TIPS
             return false;
         }
 
+
+    private void pNGBMPImageToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        // 1. Dosya Seçme Penceresi (OpenFileDialog) Oluşturma
+        OpenFileDialog openFileDialog = new OpenFileDialog();
+        openFileDialog.Title = "Dönüştürülecek Resmi Seçin";
+        openFileDialog.Filter = "Resim Dosyaları|*.png;*.bmp|Tüm Dosyalar|*.*";
+
+        if (openFileDialog.ShowDialog() == DialogResult.OK)
+        {
+            try
+            {
+                // Seçilen resmi yükle
+                // Not: Dosya kilitleme sorununu önlemek için FileStream ile açıp Bitmap kopyası oluşturuyoruz
+                
+                using (var stream = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read))
+                {
+                        originalImage = new Bitmap(stream);
+                        tabControl1.SelectedTab = tabConvert;  
+                        pictureBox5.Image = originalImage;
+                        MessageBox.Show("Base Image is loaded. Ready for conversion.", "Happy", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Bir hata oluştu: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+
+        private void rangeSliderNet41_RangeChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
+        }
+
+        private void ExecuteConversion3()
+        {
+            if (originalImage == null)
+            {
+                MessageBox.Show("Lütfen önce bir resim yükleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (noProcess) return;
+
+            // ... (Parametre hazırlama kısmı aynı kalacak) ...
+            var parameters = new MLTConverter.ConversionParams
+            {
+                // ... (Parametreleriniz buraya)
+                RedLow = rangeSliderNet41.LowerValue,
+                // ...
+            };
+
+            MLTConverter converter = new MLTConverter();
+            var result = converter.ConvertImage(originalImage, parameters);
+
+            // -- SEÇİM ALANI HESAPLAMA --
+            int startCellX = 0;
+            int endCellX = 31;
+            int startCellY = 0;
+            int endCellY = 191;
+
+            if (hasValidSelection)
+            {
+                // Piksel koordinatlarını Hücre (Cell) koordinatlarına çevir (0-31, 0-191)
+                // Math.Min/Max kullanıyoruz çünkü kullanıcı tersten seçim yapmış olabilir
+                int pX1 = Math.Min(selectionStart.X, selectionEnd.X);
+                int pY1 = Math.Min(selectionStart.Y, selectionEnd.Y);
+                int pX2 = Math.Max(selectionStart.X, selectionEnd.X);
+                int pY2 = Math.Max(selectionStart.Y, selectionEnd.Y);
+
+                // cw ve ch global zoom değişkenlerinizdir.
+                // Genelde: x / cw = 0..31 aralığını verir.
+                startCellX = Math.Max(0, pX1 / cw);
+                endCellX = Math.Min(31, pX2 / cw);
+
+                startCellY = Math.Max(0, pY1 / ch);
+                endCellY = Math.Min(191, pY2 / ch);
+            }
+
+            // -- KOPYALAMA --
+            // Tüm resmi dönüştürdük (result içinde), ama sadece belirlediğimiz alanı kopyalıyoruz.
+
+            for (int y = 0; y < 192; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    // Eğer bir seçim varsa VE şu anki x,y bu seçimin dışındaysa
+                    // bu hücreyi atla (eski hali kalsın)
+                    if (hasValidSelection)
+                    {
+                        if (x < startCellX || x > endCellX || y < startCellY || y > endCellY)
+                        {
+                            continue;
+                        }
+                    }
+
+                    int linearIndex = (y * 32) + x;
+
+                    // Bitmap verisini aktar
+                    bmp[x, y] = result.BitmapData[linearIndex];
+
+                    // Attribute verisini aktar
+                    mlt[x, y] = result.AttributeData[linearIndex];
+                }
+            }
+
+            setup(); // repaint screen
+        }
+        private void ExecuteConversion()
+        {
+            if (originalImage == null)
+            {
+                MessageBox.Show("Lütfen önce bir resim yükleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (noProcess) return; //prevent loop
+
+            // 2. Parametreleri Hazırla (Sizin belirlediğiniz değerler)
+            var parameters = new MLTConverter.ConversionParams
+            {
+                RedLow = rangeSliderNet41.LowerValue,
+                RedHigh = rangeSliderNet41.UpperValue,
+                GreenLow = rangeSliderNet42.LowerValue,
+                GreenHigh = rangeSliderNet42.UpperValue,
+                BlueLow = rangeSliderNet43.LowerValue,
+                BlueHigh = rangeSliderNet43.UpperValue,
+                BrightLow = rangeSliderNet44.LowerValue,
+                BrightHigh = rangeSliderNet44.UpperValue,
+                FlipDither = chkMltFlip.Checked,
+                Use4Color = chkMltLevel.Checked,
+                ForceBright = chkMltBri.Checked,
+                NoBright = chkMltNobri.Checked
+            };
+
+            // 3. Çeviriciyi Başlat ve Dönüştür
+            MLTConverter converter = new MLTConverter();
+            int startCellX = 0;
+            int endCellX = 31;
+            int startCellY = 0;
+            int endCellY = 191;
+
+            if (hasValidSelection)
+            {
+                // Piksel koordinatlarını Hücre (Cell) koordinatlarına çevir (0-31, 0-191)
+                // Math.Min/Max kullanıyoruz çünkü kullanıcı tersten seçim yapmış olabilir
+                int pX1 = Math.Min(selectionStart.X, selectionEnd.X);
+                int pY1 = Math.Min(selectionStart.Y, selectionEnd.Y);
+                int pX2 = Math.Max(selectionStart.X, selectionEnd.X);
+                int pY2 = Math.Max(selectionStart.Y, selectionEnd.Y);
+
+                // cw ve ch global zoom değişkenlerinizdir.
+                // Genelde: x / cw = 0..31 aralığını verir.
+                startCellX = Math.Max(0, pX1 / cw);
+                endCellX = Math.Min(31, pX2 / cw);
+
+                startCellY = Math.Max(0, pY1 / ch);
+                endCellY = Math.Min(191, pY2 / ch);
+            }
+
+            // Dönüşüm işlemi
+            var result = converter.ConvertImage(originalImage, parameters);
+            for (int y = 0; y < 192; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    if (hasValidSelection)
+                    {
+                        if (x < startCellX || x > endCellX || y < startCellY || y > endCellY)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // 1D array içindeki index formülü: (Satır No * Genişlik) + Sütun No
+                    int linearIndex = (y * 32) + x;
+
+                    // Bitmap verisini aktar
+                    bmp[x, y] = result.BitmapData[linearIndex];
+
+                    // Attribute verisini aktar (byte -> int dönüşümü otomatik yapılır)
+                    mlt[x, y] = result.AttributeData[linearIndex];
+                }
+            }
+            setup(); //repaint screen
+        }
+
+        private void rangeSliderNet42_RangeChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
+        }
+
+        private void rangeSliderNet43_RangeChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
+        }
+
+        private void rangeSliderNet44_RangeChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
+        }
+
+        private void button19_Click_1(object sender, EventArgs e)
+        {
+            noProcess = true;
+            //reset sliders
+            rangeSliderNet41.LowerValue = 96;
+            rangeSliderNet41.UpperValue = 160;
+            rangeSliderNet42.LowerValue = 96;
+            rangeSliderNet42.UpperValue = 160;
+            rangeSliderNet43.LowerValue = 96;
+            rangeSliderNet43.UpperValue = 160;
+            rangeSliderNet44.LowerValue = 96;
+            rangeSliderNet44.UpperValue = 160;
+            rangeSliderNet45.LowerValue = 96;
+            rangeSliderNet45.UpperValue = 160;
+            noProcess = false;
+            ExecuteConversion();
+        }
+
+        private void rangeSliderNet45_RangeChanged(object sender, EventArgs e)
+        {
+            if ( noProcess ) return; //if we are syncing using trackbar, skipthis
+            noProcess = true;
+            rangeSliderNet41.LowerValue = rangeSliderNet45.LowerValue;
+            rangeSliderNet41.UpperValue = rangeSliderNet45.UpperValue;
+            rangeSliderNet42.LowerValue = rangeSliderNet45.LowerValue;
+            rangeSliderNet42.UpperValue = rangeSliderNet45.UpperValue;
+            rangeSliderNet43.LowerValue = rangeSliderNet45.LowerValue;
+            rangeSliderNet43.UpperValue = rangeSliderNet45.UpperValue;
+            noProcess = false;
+            ExecuteConversion();
+        }
+
+        private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+            noProcess = true;
+            rangeSliderNet41.LowerValue = trackBar2.Value;
+            rangeSliderNet41.UpperValue = trackBar2.Value;
+            rangeSliderNet42.LowerValue = trackBar2.Value;
+            rangeSliderNet42.UpperValue = trackBar2.Value;
+            rangeSliderNet43.LowerValue = trackBar2.Value;
+            rangeSliderNet43.UpperValue = trackBar2.Value;
+            rangeSliderNet45.LowerValue = trackBar2.Value;
+            rangeSliderNet45.UpperValue = trackBar2.Value;
+            noProcess = false;
+            ExecuteConversion();
+        }
+
+
         /// <summary>
         /// Bir rengin siyah olup olmadığını kontrol eder (Normal Siyah: 0, Parlak Siyah: 8).
         /// </summary>
@@ -7009,6 +7312,79 @@ TIPS
             return color == 0 || color == 8;
         }
 
+        private void pictureBox1_Paint(object sender, PaintEventArgs e)
+        {
+            // Eğer seçim yapılıyorsa veya geçerli bir seçim varsa çiz
+            if (isSelectionActive || hasValidSelection)
+            {
+                // Koordinatları 8x1 grid'e (cw ve ch) snap (yapıştırma) işlemi
+                // Not: cw=8*density, ch=cw/8 varsayımıyla (Cell Width/Height)
+
+                int startX = Math.Min(selectionStart.X, selectionEnd.X);
+                int startY = Math.Min(selectionStart.Y, selectionEnd.Y);
+                int endX = Math.Max(selectionStart.X, selectionEnd.X);
+                int endY = Math.Max(selectionStart.Y, selectionEnd.Y);
+
+                // Grid'e hizala (Snap to grid)
+                int gridSX = (startX / cw) * cw;
+                int gridSY = (startY / ch) * ch;
+                int gridEX = ((endX / cw) + 1) * cw; // +1 sağ kenarı kapsamak için
+                int gridEY = ((endY / ch) + 1) * ch;
+
+                int width = gridEX - gridSX;
+                int height = gridEY - gridSY;
+
+                // Seçim kutusunu çiz (Sarı, kesikli çizgi)
+                using (Pen pen = new Pen(Color.Yellow, 2))
+                {
+                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    e.Graphics.DrawRectangle(pen, gridSX, gridSY, width, height);
+                }
+
+                // İçi hafif dolu görünüm (Opsiyonel)
+                using (Brush brush = new SolidBrush(Color.FromArgb(15, 255, 255, 255)))
+                {
+                    e.Graphics.FillRectangle(brush, gridSX, gridSY, width, height);
+                }
+            }
+        }
+
+        private void pictureBox5_Paint(object sender, PaintEventArgs e)
+        {
+            if (isSelectionActive || hasValidSelection)
+            {
+                // Koordinatları 8x1 grid'e (cw ve ch) snap (yapıştırma) işlemi
+                // Not: cw=8*density, ch=cw/8 varsayımıyla (Cell Width/Height)
+
+                int startX = Math.Min(selectionStart.X, selectionEnd.X);
+                int startY = Math.Min(selectionStart.Y, selectionEnd.Y);
+                int endX = Math.Max(selectionStart.X, selectionEnd.X);
+                int endY = Math.Max(selectionStart.Y, selectionEnd.Y);
+                int mcw = 1;
+                int mch = 1;
+                // Grid'e hizala (Snap to grid)
+                int gridSX = (startX / density) * mcw;
+                int gridSY = (startY / density) * mch;
+                int gridEX = ((endX / density) + 1) * mcw; // +1 sağ kenarı kapsamak için
+                int gridEY = ((endY / density) + 1) * mch;
+
+                int width = gridEX - gridSX;
+                int height = gridEY - gridSY;
+
+                // Seçim kutusunu çiz (Sarı, kesikli çizgi)
+                using (Pen pen = new Pen(Color.Yellow, 2))
+                {
+                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    e.Graphics.DrawRectangle(pen, gridSX, gridSY, width, height);
+                }
+
+                // İçi hafif dolu görünüm (Opsiyonel)
+                using (Brush brush = new SolidBrush(Color.FromArgb(33, 255, 255, 255)))
+                {
+                    e.Graphics.FillRectangle(brush, gridSX, gridSY, width, height);
+                }
+            }
+        }
 
         private void CopyFromBelowRaster(int y) //auto fix utility
         {
@@ -7176,8 +7552,25 @@ TIPS
         {
             groupBox4.Visible = radioButton5.Checked;
         }
-
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (isSelectionActive)
+            {
+                isSelectionActive = false;
+                // Başlangıç ve bitiş noktaları aynı değilse geçerli bir seçim vardır
+                if (selectionStart != selectionEnd)
+                {
+                    hasValidSelection = true;
+                }
+                pictureBox1.Invalidate();
+                pictureBox5.Invalidate();
+            }
+            else
+            {
+                isHeldDown = false; // Mevcut kod
+            }
+        }
+        private void pictureBox1_MouseUp2(object sender, MouseEventArgs e)
         {
             isHeldDown = false;
         }
