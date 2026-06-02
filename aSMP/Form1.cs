@@ -17,19 +17,19 @@ namespace aSMP
     {
 
         // TODO:
-        // PUSH'lar aynı veriyi yükleyebiliyor, registerler tekrar kullanılabilir
-        // çözüldü: başlangıç timing'i tutmuyor!!!      
-        // çözüldü: Overrun olduğu zaman emülaston kesiliyor, oradaki register'ların sonraki raster'a doğru yansıdığından emin olalım
-        // register dizme işi yanlış çalışıyor (gibi, tam hatırlamıyorum nasıl çalışması gerektiğini). adamshary2.mlt dosyasında görülüyor
+        // PUSH instructions may load the same data, registers can be reused
+        // resolved: startup timing does not match!!!
+        // resolved: when an overrun happens the emulation stops, make sure registers propagate to the next raster
+        // register ordering routine works incorrectly (I do not fully recall how it should behave); visible in adamshary2.mlt
 
-        // görüntüyü yukarı aşağı sağa sola kaydırma seçeneği lazım
+        // need an option to shift the image up/down/left/right
 
         // v71 Balance Rasters hala wip
 
 
-        // v0.62 - pixel+paint mode eklendi, line mlt göstergeleri eklendi, satırdaki mlt sayısı bilgisi eklendi 12.kasım.24
-        // v0.7 - Loop waitler eklendi. Dosyalar 6-8kb boyutunda 20/11/2024
-        // v0.71 - Replace color, mlt swap mlt, basic düzgün restore ediyor 19.02.2025
+        // v0.62 - pixel+paint mode added, line MLT indicators added, row-level MLT count added 12.Nov.24
+        // v0.7 - Loop waits added. Files are 6-8KB in size 20/11/2024
+        // v0.71 - Replace color, MLT swap MLT, BASIC restores cleanly 19.02.2025
 
 
         [DllImport("user32.dll")]
@@ -98,11 +98,11 @@ namespace aSMP
         int rgi = 0, rgp = 7, rgm = 56, pixelx = 0, pixely = 0, px = 0, py = 0, qptr = 0;
         int[,] safecycle = new int[32, 192]; //a pre-calc table that holds when ula beam scans a coordinate. An attribute must be updated before this cycle.
 
-        // Seçim alanı için değişkenler
+        // Variables for the selection area
         private Point selectionStart = Point.Empty;
         private Point selectionEnd = Point.Empty;
-        private bool isSelectionActive = false; // Seçim yapılıyor mu?
-        private bool hasValidSelection = false; // Geçerli bir seçim var mı?
+        private bool isSelectionActive = false; // Is a selection currently being made?
+        private bool hasValidSelection = false; // Is there a valid selection?
 
 
         int BalanceThreshold = 8; //raster limit for balancing.
@@ -2168,7 +2168,7 @@ namespace aSMP
             int ind = 0;
             bool ig = false;
 
-            int[] uniquedata = new int[256]; //bir satırda yazılması gereken kaç *unique* byte değeri var
+            int[] uniquedata = new int[256]; //how many *unique* byte values must be written per row
             int uniquedatacnt = 0;
 
             for (int i = 0; i < uniquedata.Length; i++)
@@ -2178,12 +2178,12 @@ namespace aSMP
 
             for (int x = 0; x < 17; x++)
             {
-                groups[y, x, 0] = 0; //grubun taşıdığı toplam tstate (tstate)
-                groups[y, x, 1] = 0; //grup blok sayısı (mlt blok(0-31))
-                groups[y, x, 2] = 0; //grubun deadline tstate'i (tstate)
-                groups[y, x, 3] = 0; //grup kodunun ideal başlangıç zamanı (tstate--sonradan hesaplanır)
-                groups[y, x, 4] = 0; //grubun son x koordinatı (0-31)
-                groupcode[y, x] = ""; //grubun uygulama kodu
+                groups[y, x, 0] = 0; //total t-states carried by the group
+                groups[y, x, 1] = 0; //group block count (MLT blocks 0-31)
+                groups[y, x, 2] = 0; //group deadline t-state
+                groups[y, x, 3] = 0; //ideal start time for the group code (t-state—computed later)
+                groups[y, x, 4] = 0; //group's final X coordinate (0-31)
+                groupcode[y, x] = ""; //execution code for the group
             }
 
 
@@ -2871,7 +2871,7 @@ namespace aSMP
                     fixtr = "ld a,(22528) ;Contention fix\r\n";
                     int result = applycontention("ld a,(22528) ;test", (y * modelts) + rasterst - fazla[y]);
                     //fix contention by reading from contended memory.
-                    tisi = (result - ((y * modelts) + rasterst - fazla[y])); //ld a, kaç ts tuttu?
+                    tisi = (result - ((y * modelts) + rasterst - fazla[y])); //how many t-states did ld a take?
 
                 }
 
@@ -2887,12 +2887,12 @@ namespace aSMP
                     #region repoll
                     //re-evaluate
                     // this is getting spagetti code. More explaining:
-                    // yukarıda yaptığımız şey, şöyle, önce ld ile yükleme yapıyoruz, sonra push ile çiftleri yazıyoruz, sonra (HL) ile tekleri yazıyoruz
-                    // ardından bu yazım grubunu raster'ın sonuna dayıyoruz. Bu herzaman başarılı olamayabiliyor. Bu durumda en yakın değeri buluyoruz.
-                    // Rasterın sonu doldurulunca baş kısmındaki boşluğu doldurmak gerekiyor. 
-                    // bunu da dolduruyoruz. Ama nedense bu da herzaman dolmuyor. Bu daha büyük bir problem çünkü alt kısımın yerine oturduğu varsayılarak
-                    // ts hesabı tutmuş oluyoruz. Bu durumda tüm hesaplar boşa gitmiş oluyor. Bütün kodu baştan zamanlama hesabına 
-                    // tabi tutmak gerekiyor. İşte bu rutin, o rutin. Al baştan.
+                    // what we do above is: first load via ld, then write pairs with push, then write singles via (HL)
+                    // we then push this write group to the end of the raster. That does not always succeed, so we pick the closest fit.
+                    // once the raster tail is full we must fill the gap at the beginning.
+                    // we fill that too, yet for some reason it still does not always fill. That is a bigger issue because we assume the lower part fits.
+                    // the t-state math therefore looks valid. When it fails all calculations are wasted and we must recompute timings
+                    // from scratch. This routine is the one that re-runs everything from the top.
                     offset = (y * modelts) + rasterst - fazla[y]; //reset start ts
                     writelen = offset; //backup startts
                     newcode = ";re-polling ts:" + offset + "\r\n"; //dump info
@@ -3110,7 +3110,7 @@ namespace aSMP
                 }
                 needed = 22 + (((((rasterst - 68) + toprasterdelay) - 24) - tsnow) % 26);
             }
-            //Burayı tamir et;
+            // TODO: fix this section
 
             code += ";Ts Now:" + tsnow + "\r\n";
 
@@ -4055,7 +4055,7 @@ namespace aSMP
                                 {
                                     if (atr[k] != shown[z])
                                     {
-                                        // tutmadı, slot var mı?
+                                        // no match, is there a free slot?
                                         fail = true;
                                     }
                                     else
@@ -4112,7 +4112,7 @@ namespace aSMP
                                     {
                                         if (atr[k] != shown[z])
                                         {
-                                            // tutmadı, slot var mı?
+                                            // no match, is there a free slot?
                                             fail = true;
                                         }
                                         else
@@ -4155,9 +4155,9 @@ namespace aSMP
                                     fail = false;
                                     for (int k = 0; k <= pointer; k++)
                                     {
-                                        if (atr[k] != shown[z])
-                                        {
-                                            // tutmadı, slot var mı?
+                                    if (atr[k] != shown[z])
+                                    {
+                                        // no match, is there a free slot?
                                             fail = true;
                                         }
                                         else
@@ -4196,9 +4196,9 @@ namespace aSMP
                                     fail = false;
                                     for (int k = 0; k <= pointer; k++)
                                     {
-                                        if (atr[k] != shown[z])
-                                        {
-                                            // tutmadı, slot var mı?
+                                    if (atr[k] != shown[z])
+                                    {
+                                        // no match, is there a free slot?
                                             fail = true;
                                         }
                                         else
@@ -4443,38 +4443,38 @@ namespace aSMP
 
         private int addtotable(ref int[] table, int item)
         {
-            // item: Eklenecek renk (0-15 arası, parlaklık dahil)
+            // item: color to add (0-15 inclusive, brightness included)
 
-            // Tablo boşsa (ilk eleman)
+                // If the table is empty (first element)
             if (table[2] == -1)
             {
                 table[2] = 0;
                 table[0] = item;
-                return 2; // Yeni eklendi
+                return 2; // Newly added
             }
 
-            // Zaten var mı?
+            // Does it already exist?
             for (int x = 0; x <= table[2]; x++)
             {
-                if (table[x] == item) return 1; // Zaten var
+                if (table[x] == item) return 1; // Already present
             }
 
-            // Tablo dolu mu? (Maks 2 renk: Ink ve Paper)
-            if (table[2] >= 1) return 0; // Dolu, başarısız
+            // Is the table full? (Max 2 colors: Ink and Paper)
+            if (table[2] >= 1) return 0; // Full, failed
 
-            // Parlaklık Uyuşmazlığı Kontrolü
-            // Eğer tablodaki mevcut rengin parlaklığı ile yeni rengin parlaklığı farklıysa
-            // (Biri >7 diğeri <=7 ise) ve ikisi de Siyah değilse -> HATA
-            // Not: Siyah (0 ve 8) istisnadır ama Spectrum'da Bright 1 ise tüm blok Bright olur.
-            // Bright Black (8) ve Normal Red (2) -> Blok Bright olur -> Black(8) ve Bright Red(10).
-            // Bu yüzden parlaklıklar uyuşmuyorsa, yeni bir attribute bloğu başlatmak daha güvenlidir.
+            // Brightness mismatch check
+            // If the existing color brightness in the table differs from the new color
+            // (One >7 and the other <=7) and neither is black -> ERROR
+            // Note: Black (0 and 8) is an exception, but on the Spectrum when Bright=1 the entire block becomes bright.
+            // Bright Black (8) plus Normal Red (2) -> block becomes Bright -> Black(8) and Bright Red(10).
+            // Therefore if brightnesses do not match, it is safer to start a new attribute block.
 
             bool tBright = table[0] > 7;
             bool iBright = item > 7;
 
-            if (tBright != iBright) return 0; // Parlaklık çakışması, böl.
+            if (tBright != iBright) return 0; // Brightness conflict, split.
 
-            // Ekle
+            // Add it
             table[2]++;
             table[table[2]] = item;
             return 2;
@@ -4513,55 +4513,55 @@ namespace aSMP
 
         private void sortuntil(int color, int x, int y, int z)
         {
-            // Hedef renkleri al (New Ink / New Paper)
+            // Fetch target colors (New Ink / New Paper)
             int[] r = getattrignore((byte)color);
             // r[0]=Ink, r[1]=Paper
 
             for (int k = y; k <= y + z; k++)
             {
-                // Orijinal renkleri al
+                // Fetch original colors
                 int[] s = getattrignore((byte)mlt[x, k]);
                 // s[0]=Old Ink, s[1]=Old Paper
 
-                // Mevcut Bitmap durumuna göre ekranda ne göründüğünü bul
-                int visualInk = (bmp[x, k] == 255) ? s[0] : (bmp[x, k] == 0 ? s[1] : s[0]); // Basitleştirilmiş
+                // Determine what is visible on screen based on the current bitmap
+                int visualInk = (bmp[x, k] == 255) ? s[0] : (bmp[x, k] == 0 ? s[1] : s[0]); // Simplified
                 int visualPaper = (bmp[x, k] == 255) ? s[1] : (bmp[x, k] == 0 ? s[0] : s[1]);
 
-                // Hangi modun daha az hata üreteceğini hesapla
-                // Mod 1: Normal (Ink->Ink, Paper->Paper)
-                // Mod 2: Inverted (Ink->Paper, Paper->Ink)
+                // Decide which mode yields fewer errors
+                // Mode 1: Normal (Ink->Ink, Paper->Paper)
+                // Mode 2: Inverted (Ink->Paper, Paper->Ink)
 
-                // Basit bir benzerlik skoru: Renkler tutuyorsa 0 puan, tutmuyorsa 1 puan ceza
-                // Not: Bu basit mantık yerine, eski kodunuzdaki mantığı güçlendiriyoruz:
+                // Simple similarity score: matching colors cost 0, mismatches cost 1
+                // Note: Instead of this simple logic we strengthen the earlier approach:
 
                 bool shouldInvert = false;
 
-                if (bmp[x, k] == 0) // Orijinal: FULL PAPER
+                if (bmp[x, k] == 0) // Original: FULL PAPER
                 {
-                    // Eğer Eski Paper (s[1]) == Yeni Ink (r[0]) ise ters çevir ki Ink görünsün
+                    // If old Paper (s[1]) equals new Ink (r[0]) then invert so Ink becomes visible
                     if (s[1] == r[0]) shouldInvert = true;
                 }
-                else if (bmp[x, k] == 255) // Orijinal: FULL INK
+                else if (bmp[x, k] == 255) // Original: FULL INK
                 {
-                    // Eğer Eski Ink (s[0]) == Yeni Paper (r[1]) ise ters çevir ki Paper görünsün
+                    // If old Ink (s[0]) equals new Paper (r[1]) then invert so Paper becomes visible
                     if (s[0] == r[1]) shouldInvert = true;
                 }
-                else // Karışık Bitmap
+                else // Mixed bitmap
                 {
-                    // Orijinal Ink, Yeni Paper'a benziyorsa VE Orijinal Paper, Yeni Ink'e benziyorsa -> Ters Çevir
+                    // If original Ink looks like new Paper AND original Paper looks like new Ink -> invert
                     if (s[0] == r[1] || s[1] == r[0])
                     {
                         shouldInvert = true;
                     }
                 }
 
-                // Kararı uygula
+                // Apply the decision
                 if (shouldInvert)
                 {
-                    bmp[x, k] = (byte)(~bmp[x, k]); // Bitmap'i tersle
+                    bmp[x, k] = (byte)(~bmp[x, k]); // Invert bitmap data
                 }
 
-                mlt[x, k] = color; // Yeni rengi ata
+                mlt[x, k] = color; // Assign the new color
             }
         }
 
@@ -4622,49 +4622,49 @@ namespace aSMP
         }
         private void sortcell(int x, int y)
         {
-            y = y * 8; // Piksel koordinatına çevir
-                       // Tablo: [Renk1, Renk2, Sayaç]
+            y = y * 8; // convert to pixel coordinates
+                       // Table: [Color1, Color2, Counter]
             int[] table = { 99, 99, -1 };
 
             int starty = 0;
 
             for (int z = 0; z < 8; z++)
             {
-                // Rengi al (Parlaklık dahil!)
+                // Grab the color (including brightness)
                 int currentColor = 0;
 
-                // Orijinal bitmap'e bakarak hangi rengin kullanıldığını bul
+                // Use the original bitmap to determine which color is in use
                 int[] r = getattr((byte)mlt[x, y + z]); // [0]Ink, [1]Paper, [2]Flash?
-                                                        // getattr fonksiyonunuz r[0] ve r[1]'e parlaklığı eklemiyorsa, eklemeliyiz:
-                                                        // (Sizin kodunuzda getattr ink/paper'ı 0-7 arası verip, bri'yi ayrı veriyor olabilir.
-                                                        //  Eğer öyleyse item'i (color + bri*8) şeklinde oluşturmalıyız.)
+                                                        // if getattr does not inject brightness into r[0]/r[1], add it manually:
+                                                        // (Your code may return ink/paper as 0-7 and brightness separately.
+                                                        //  If so compute item as color + bri*8.)
 
-                // Varsayalım: int ink = r[0] + (r[2]>0 ? 8:0); int paper = r[1] + (r[2]>0 ? 8:0);
-                int ink = r[0]; // Sizin kodunuzda r[0] zaten parlaklığı içeriyor gibi görünüyor (palette fonksiyonlarından anlaşılan)
+                // Assume: int ink = r[0] + (r[2]>0 ? 8:0); int paper = r[1] + (r[2]>0 ? 8:0);
+                int ink = r[0]; // your code already seems to include brightness in r[0] (based on palette helpers)
                 int paper = r[1];
 
-                // Siyah düzeltmesi (İsteğe bağlı, ama addtotable strict ise gerek yok)
+                // Black correction (optional when addtotable stays strict)
                 // if (ink == 8) ink = 0; 
                 // if (paper == 8) paper = 0; 
 
                 bool fail = false;
 
-                if (bmp[x, y + z] == 0) // Sadece PAPER görünüyor
+                if (bmp[x, y + z] == 0) // Only PAPER is visible
                 {
                     if (addtotable(ref table, paper) == 0) fail = true;
                 }
-                else if (bmp[x, y + z] == 255) // Sadece INK görünüyor
+                else if (bmp[x, y + z] == 255) // Only INK is visible
                 {
                     if (addtotable(ref table, ink) == 0) fail = true;
                 }
-                else // İkisi de görünüyor
+                else // Both are visible
                 {
-                    // Önce Ink'i dene, sonra Paper'ı
-                    // Geçici tablo kopyası ile dene çünkü biri girer diğeri girmezse tablo bozulur
+                    // Try Ink first, then Paper
+                    // Use a temporary table copy because one may fit while the other fails
                     int[] tempTable = (int[])table.Clone();
                     if (addtotable(ref tempTable, ink) != 0 && addtotable(ref tempTable, paper) != 0)
                     {
-                        table = tempTable; // Başarılı, onayla
+                        table = tempTable; // Success, commit
                     }
                     else
                     {
@@ -4674,38 +4674,38 @@ namespace aSMP
 
                 if (fail)
                 {
-                    // Tablo doldu veya uyumsuzluk var.
-                    // Buraya kadarki kısmı (starty'den z-1'e kadar) yaz.
-                    // Z şu anki uyumsuz satır.
+                    // Table is full or incompatible.
+                    // Write the section so far (from starty to z-1).
+                    // z is the current conflicting row.
                     int len = z - starty;
                     if (len > 0)
                     {
-                        // Tablodaki renklerden attribute oluştur
+                        // Build an attribute from the colors in the table
                         int c1 = table[0];
-                        int c2 = (table[2] > 0) ? table[1] : table[0]; // Tek renk varsa ikisini de aynı yap
+                        int c2 = (table[2] > 0) ? table[1] : table[0]; // If only one color exists, mirror it
 
-                        sortuntil(putattr(c1, c2), x, y + starty, len - 1); // len-1 çünkü sortuntil <= kullanıyor
+                        sortuntil(putattr(c1, c2), x, y + starty, len - 1); // len-1 because sortuntil uses <=
                     }
 
-                    // Resetle ve şu anki satırı yeni tablonun başı yap
+                    // Reset and treat the current row as the start of the new table
                     starty = z;
                     table[0] = 99; table[1] = 99; table[2] = -1;
 
-                    // Şu anki satırın renklerini yeni tabloya ekle
-                    // (Yukarıdaki mantığın aynısı, fail olmadan ekle)
+                    // Add the current row's colors to the new table
+                    // (same logic as above without failing)
                     if (bmp[x, y + z] == 0) addtotable(ref table, paper);
                     else if (bmp[x, y + z] == 255) addtotable(ref table, ink);
                     else { addtotable(ref table, ink); addtotable(ref table, paper); }
                 }
             }
 
-            // Döngü bitti, kalanları yaz
+            // Loop finished, write the remainder
             int remainingLen = 8 - starty;
             if (remainingLen > 0)
             {
                 int c1 = table[0];
-                int c2 = (table[2] > 0) ? table[1] : ((c1 > 7) ? 0 : 7); // Tek renk kaldıysa zıt renk ver (görünmez zaten)
-                                                                         // Not: Eğer tek renk varsa (örn sadece siyah), putattr(0,0) yapmak güvenlidir.
+                int c2 = (table[2] > 0) ? table[1] : ((c1 > 7) ? 0 : 7); // If one color left give an opposite tint (it is invisible anyway)
+                                                                         // Note: If only one color remains (e.g. black only) calling putattr(0,0) is safe.
                 if (table[2] == 0) c2 = c1;
 
                 sortuntil(putattr(c1, c2), x, y + starty, remainingLen - 1);
@@ -5327,12 +5327,12 @@ namespace aSMP
             if (isSelectionActive)
             {
                 selectionEnd = e.Location;
-                pictureBox1.Invalidate(); // Seçim dikdörtgenini güncellemek için tekrar çizdir
+                pictureBox1.Invalidate(); // redraw to update the selection rectangle
             }
             else
             {
-                // Mevcut MouseMove kodlarınız (cursor vs.)
-                /* Buraya mevcut kodlarınız gelecek */
+                // Existing MouseMove logic (cursor etc.)
+                /* Insert the rest of your logic here */
                 if (radioButton4.Checked || optDraggingNow)
                 {
                     // Dragging logic...
@@ -5371,18 +5371,18 @@ namespace aSMP
         }
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            // SHIFT tuşuna basılıysa seçim moduna gir
+            // Enter selection mode while the SHIFT key is pressed
             if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
             {
                 isSelectionActive = true;
                 hasValidSelection = false;
                 selectionStart = e.Location;
                 selectionEnd = e.Location;
-                pictureBox1.Invalidate(); // Çizimi tetikle
+                pictureBox1.Invalidate(); // trigger drawing
             }
             else
             {
-                // Mevcut boyama/cursor kodlarınız burada kalacak
+                // Keep your existing painting/cursor logic here
                 if (!(radioButton4.Checked || optDraggingNow)) move_cursor(e.X, e.Y, (int)e.Button);
                 if (e.Button == MouseButtons.Left)
                 {
@@ -6404,7 +6404,7 @@ TIPS
             int sim = chkSimilarColor.Checked ? 1 : 0;
             if (chkBalanceAll.Checked)
             {
-                // Tüm ekranı dengele (-1)
+                // Balance the entire screen (-1)
                 PerformBalance(th, -1, pxl, bri, sim);
             }
             else
@@ -6416,37 +6416,37 @@ TIPS
         private void OldBalance()
         {
 
-            // 1. Parametreleri al ve Yükleri Hesapla
+            // 1. Read parameters and compute loads
             BalanceThreshold = Convert.ToInt32(txtBalance.Text);
             RecalculateLoads();
 
             int totalMoved = 0;
-            int maxPasses = 50; // Sonsuz döngüyü engellemek için limit (Ripple etkisi için yeterli)
+            int maxPasses = 50; // limit to avoid infinite loops (enough for the ripple effect)
 
-            // 2. Dengeleme Döngüsü (Passes)
-            // Zincirleme reaksiyon (ripple) oluşabilmesi için birden fazla kez tarıyoruz.
+            // 2. Balancing loop (passes)
+            // Run several sweeps to allow a ripple effect
             for (int pass = 0; pass < maxPasses; pass++)
             {
                 int movedInThisPass = 0;
 
-                // --- FAZ 1: YUKARI İTME (UPWARD PUSH) ---
-                // Yukarıdan aşağıya tarayarak geliyoruz (1 -> 191).
-                // Böylece; örneğin 2. satır 1'e yük bindirirse, döngü 3'e geldiğinde 3 de 2'ye bindirebilir.
-                // Ancak 'yer açma' mantığı için; eğer 1. satır 0'a yük atıp boşalırsa, 2. satırın 1'e atması kolaylaşır.
-                // Bu yüzden yukarı itme için en ideal tarama sırası 1'den 191'e gitmektir.
+                // --- PHASE 1: UPWARD PUSH ---
+                // Sweep from top to bottom (1 -> 191).
+                // Example: if row 2 pushes load into row 1, row 3 can push into row 2 when we get there.
+                // This also opens room: if row 1 offloads into row 0, row 2 can more easily target row 1.
+                // Hence scanning from 1 to 191 is ideal for the upward push.
                 for (int y = 1; y < 192; y++)
                 {
                     if (totmlt[y] > BalanceThreshold)
                     {
-                        // Eğer üst satır (y-1) müsaitse veya o da dolu olsa bile denemeye değer
-                        // (Çünkü bir sonraki pass'te o da boşalmış olabilir)
+                        // Try the upper row (y-1) even if it is currently full;
+                        // the next pass might empty it just in time.
                         movedInThisPass += TryShiftLine(y, y - 1);
                     }
                 }
 
-                // --- FAZ 2: AŞAĞI İTME (DOWNWARD PUSH) ---
-                // Aşağıdan yukarıya tarayarak geliyoruz (190 -> 0).
-                // 190, 191'e atar. 189, 190'a atar...
+                // --- PHASE 2: DOWNWARD PUSH ---
+                // Sweep from bottom to top (190 -> 0).
+                // 190 pushes to 191, 189 pushes to 190, etc.
                 for (int y = 190; y >= 0; y--)
                 {
                     if (totmlt[y] > BalanceThreshold)
@@ -6457,11 +6457,11 @@ TIPS
 
                 totalMoved += movedInThisPass;
 
-                // Eğer bu turda hiç kimse yerinden kıpırdamadıysa, dengeye ulaşılmış demektir.
+                // If nothing moved during this pass we reached equilibrium.
                 if (movedInThisPass == 0) break;
             }
 
-            // 3. Ekranı Güncelle
+            // 3. Refresh the screen
             setup();
             textBox10.Text = "Balanced: " + totalMoved.ToString() + " blocks moved.";
         }
@@ -6469,18 +6469,18 @@ TIPS
         {
             int movedCount = 0;
 
-            // Kaynak satırı tarıyoruz (Sağdan sola taramak genelde görsel bütünlüğü daha az bozar)
+            // Sweep the source row (right-to-left preserves visual continuity better)
             for (int x = 31; x >= 0; x--)
             {
-                // Eğer hedef satır kapasiteyi doldurduysa (Threshold'u geçtiyse) daha fazla yükleme yapma.
-                // (İsteğe bağlı: Eğer "Ripple" etkisi ile hedefin de boşaltılacağına güveniyorsak bu kontrolü esnetebiliriz,
-                // ama görsel bozulmayı önlemek için hedefin threshold'u geçmemesi güvenlidir.)
+                // Stop if the target row is already at capacity (over the threshold).
+                // We could relax this when we rely on the ripple effect to empty it later,
+                // but keeping it under the threshold preserves visuals.
                 if (totmlt[targetY] >= BalanceThreshold) break;
 
-                // Kaynak satır eşik değerin altına indiyse işlem tamamdır.
+                // Stop once the source drops below the threshold.
                 if (totmlt[sourceY] <= BalanceThreshold) break;
 
-                // Hücre transferini dene
+                // Try to transfer the cell
                 if (TryMoveCell(x, sourceY, targetY))
                 {
                     movedCount++;
@@ -6490,74 +6490,72 @@ TIPS
         }
         private bool TryMoveCell(int x, int sourceY, int targetY)
         {
-            // Kural 1: Kaynak MLT olmalı, Hedef Normal (MLT değil) olmalı.
-            if (chex[x, sourceY] == 0) return false; // Kaynakta yük yok
-            if (chex[x, targetY] == 1) return false; // Hedef zaten dolu
+            // Rule 1: source must be MLT and target must be normal (non-MLT).
+            if (chex[x, sourceY] == 0) return false; // no load in the source
+            if (chex[x, targetY] == 1) return false; // target already full
 
-            // Renkleri ve Bitmapleri al
+            // Fetch colors and bitmaps
             int srcAttr = mlt[x, sourceY];
             int trgAttr = mlt[x, targetY];
             byte trgBmp = bmp[x, targetY];
 
-            // Kural 2: Hedef hücre "Tek Renk" göstermeli (Bitmap 0 veya 255).
-            // Eğer karışık bitmap varsa (0 < bmp < 255), görseli bozmadan attribute değiştiremeyiz.
+            // Rule 2: target cell must show a single color (bitmap 0 or 255).
+            // If the bitmap is mixed (0 < bmp < 255) we cannot swap attributes without corrupting visuals.
             if (trgBmp != 0 && trgBmp != 255) return false;
 
-            // Renk bileşenlerini ayrıştır [0]:Ink, [1]:Paper, [2]:Brightness (0 veya 8)
+            // Split color components [0]:Ink, [1]:Paper, [2]:Brightness (0 or 8)
             int[] sC = getattr((byte)srcAttr);
             int[] tC = getattr((byte)trgAttr);
 
-            // Kural 3: Parlaklık (Brightness) aynı olmalı.
-            // (getattr fonksiyonunuzun parlaklığı 3. elemanda döndürdüğünü varsayıyoruz)
+            // Rule 3: brightness must match
+            // (assuming getattr returns brightness in the 3rd element)
             if (sC[2] != tC[2]) return false;
 
-            // Hedefin şu an ekranda görünen rengini bul (Visible Color)
-            // Eğer bitmap 255 ise Ink(0), 0 ise Paper(1) rengi görünüyordur.
-            // Dikkat: getattr fonksiyonu [0]=Ink, [1]=Paper döndürür.
+            // Determine the currently visible color on the target
+            // If bitmap is 255 then Ink (index 0) is visible, otherwise Paper (index 1).
+            // Reminder: getattr returns [0]=Ink, [1]=Paper.
             int targetVisibleColor = (trgBmp == 255) ? tC[0] : tC[1];
 
-            // Kural 4: Hedefin görünen rengi, Kaynağın renklerinden biriyle eşleşmeli.
-            // Böylece Kaynağın attribute'unu hedefe kopyaladığımızda, hedefin görselini (bitmap'i tersleyerek de olsa) koruyabiliriz.
+            // Rule 4: the target's visible color must match one of the source colors
+            // so that when we copy the attribute we can keep the same visual (possibly by flipping the bitmap).
 
             bool matchFound = false;
             byte newTargetBitmap = 0;
 
             if (targetVisibleColor == sC[0])
             {
-                // Hedefin rengi, Kaynağın INK rengiyle aynı.
-                // O zaman hedefin yeni bitmap'i FULL INK (255) olmalı.
+                // Target color matches the source INK color, force bitmap to FULL INK (255).
                 matchFound = true;
                 newTargetBitmap = 255;
             }
             else if (targetVisibleColor == sC[1])
             {
-                // Hedefin rengi, Kaynağın PAPER rengiyle aynı.
-                // O zaman hedefin yeni bitmap'i FULL PAPER (0) olmalı.
+                // Target color matches the source PAPER color, force bitmap to FULL PAPER (0).
                 matchFound = true;
                 newTargetBitmap = 0;
             }
 
             if (matchFound)
             {
-                // --- İŞLEM ---
+                // --- PROCESS ---
 
-                // 1. Attribute Kopyala: Kaynağın rengini hedefe ver.
+                // 1. Copy attribute: give the source color to the target.
                 mlt[x, targetY] = srcAttr;
 
-                // 2. Bitmap Güncelle: Hedefin görselini korumak için hesapladığımız bitmap'i ver.
+                // 2. Update bitmap: apply the bitmap we calculated to preserve visuals.
                 bmp[x, targetY] = newTargetBitmap;
 
-                // 3. Yük Durumunu Güncelle (chex ve totmlt)
-                chex[x, sourceY] = 0; // Kaynak artık normal hücre
-                chex[x, targetY] = 1; // Hedef artık MLT (yükü aldı)
+                // 3. Update load state (chex and totmlt)
+                chex[x, sourceY] = 0; // source becomes a normal cell
+                chex[x, targetY] = 1; // target becomes an MLT cell
 
                 totmlt[sourceY]--;
                 totmlt[targetY]++;
 
-                return true; // Başarılı taşıma
+                return true; // transfer succeeded
             }
 
-            return false; // Renkler uyuşmadı
+            return false; // colors did not match
         }
 
         private void RecalculateLoads()
@@ -6565,8 +6563,8 @@ TIPS
             Array.Clear(totmlt, 0, totmlt.Length);
             for (int y = 0; y < 192; y++)
             {
-                // Gruplama mantığı (gmax) yerine doğrudan chex sayıyoruz, 
-                // çünkü balance işlemi anlık hücre bazlı yapılıyor.
+                // Count chex values directly instead of relying on grouping (gmax),
+                // because balancing operates on individual cells in real time.
                 int count = 0;
                 for (int x = 0; x < 32; x++)
                 {
@@ -6577,20 +6575,20 @@ TIPS
         }
 
         /// <summary>
-        /// Dengeleme işlemini başlatır.
+        /// Starts the balancing operation.
         /// </summary>
-        /// <param name="threshold">Satır başına maksimum MLT blok sayısı.</param>
-        /// <param name="targetLine">İşlenecek satır (0-191). Tüm ekran için -1 verin.</param>
-        /// <param name="ignorePixel">1 ise: Tek tük (1 adet) piksellik hataları silerek taşı.</param>
-        /// <param name="ignoreBright">1 ise: Parlaklık farkını görmezden gel.</param>
-        /// <param name="similarColor">1 ise: Kırmızı=Mor, Yeşil=Cyan, Sarı=Beyaz kabul et.</param>
+        /// <param name="threshold">Maximum MLT blocks per line.</param>
+        /// <param name="targetLine">Line to process (0-191). Use -1 for the entire screen.</param>
+        /// <param name="ignorePixel">If 1: treat single-pixel glitches as clean cells.</param>
+        /// <param name="ignoreBright">If 1: ignore brightness differences.</param>
+        /// <param name="similarColor">If 1: treat Red=Magenta, Green=Cyan, Yellow=White.</param>
         private void PerformBalance(int threshold, int targetLine, int ignorePixel, int ignoreBright, int similarColor)
         {
             BalanceThreshold = threshold;
-            RecalculateLoads(); // Mevcut yükleri hesapla
+            RecalculateLoads(); // calculate current loads
 
             int totalMoved = 0;
-            int maxPasses = (targetLine == -1) ? 50 : 1; // Tüm ekran ise döngüsel (ripple), tek satırsa tek geçiş.
+            int maxPasses = (targetLine == -1) ? 50 : 1; // entire screen uses ripple passes, single line uses one pass.
 
             for (int pass = 0; pass < maxPasses; pass++)
             {
@@ -6598,16 +6596,16 @@ TIPS
 
                 if (targetLine == -1)
                 {
-                    // --- TÜM EKRAN MODU ---
+                    // --- FULL SCREEN MODE ---
 
-                    // 1. Yukarı İtme Fazı (1 -> 191)
+                    // 1. Upward push phase (1 -> 191)
                     for (int y = 1; y < 192; y++)
                     {
                         if (totmlt[y] > BalanceThreshold)
                             movedInThisPass += AttemptPushLoad(y, y - 1, ignorePixel, ignoreBright, similarColor);
                     }
 
-                    // 2. Aşağı İtme Fazı (190 -> 0)
+                    // 2. Downward push phase (190 -> 0)
                     for (int y = 190; y >= 0; y--)
                     {
                         if (totmlt[y] > BalanceThreshold)
@@ -6616,40 +6614,40 @@ TIPS
                 }
                 else
                 {
-                    // --- TEK SATIR MODU ---
+                    // --- SINGLE-LINE MODE ---
                     int y = targetLine;
                     if (totmlt[y] > BalanceThreshold)
                     {
-                        // Önce yukarı itmeyi dene
+                        // Try pushing upward first
                         if (y > 0) movedInThisPass += AttemptPushLoad(y, y - 1, ignorePixel, ignoreBright, similarColor);
 
-                        // Hala eşik üzerindeyse aşağı itmeyi dene
+                        // If still above threshold, push downward
                         if (totmlt[y] > BalanceThreshold && y < 191)
                             movedInThisPass += AttemptPushLoad(y, y + 1, ignorePixel, ignoreBright, similarColor);
                     }
                 }
 
                 totalMoved += movedInThisPass;
-                if (movedInThisPass == 0) break; // Hareket yoksa döngüyü kır
+                if (movedInThisPass == 0) break; // stop if nothing moved
             }
 
-            setup(); // Ekranı güncelle
+            setup(); // refresh the screen
             textBox10.Text = $"Balanced: {totalMoved} blocks moved.";
         }
         private int AttemptPushLoad(int sourceY, int targetY, int ignorePixel, int ignoreBright, int similarColor)
         {
             int movedCount = 0;
 
-            // Sağdan sola tarama (Görsel olarak daha tutarlı genelde)
+            // Scan right-to-left (usually keeps visuals more consistent)
             for (int x = 31; x >= 0; x--)
             {
-                // Hedef zaten doluysa oraya daha fazla yük bindirme
+                // Stop pushing if the target is already full
                 if (totmlt[targetY] >= BalanceThreshold) break;
 
-                // Kaynak rahatladıysa dur
+                // Stop once the source is relieved
                 if (totmlt[sourceY] <= BalanceThreshold) break;
 
-                // Taşıma işlemini dene (Gelişmiş kurallarla)
+                // Try the transfer with the extended rules
                 if (TryMoveCellExtended(x, sourceY, targetY, ignorePixel, ignoreBright, similarColor))
                 {
                     movedCount++;
@@ -6660,7 +6658,7 @@ TIPS
 
         private bool TryMoveCellExtended(int x, int sourceY, int targetY, int ignorePixel, int ignoreBright, int similarColor)
         {
-            // Temel Kontroller: Kaynak MLT olmalı, Hedef Boş (Non-MLT) olmalı
+            // Basic checks: source must be MLT, target must be empty (non-MLT)
             if (chex[x, sourceY] == 0) return false;
             if (chex[x, targetY] == 1) return false;
 
@@ -6668,8 +6666,8 @@ TIPS
             byte cleanBmp = currentBmp;
             bool isClean = false;
 
-            // --- KURAL 1: IGNORE PIXEL ---
-            // Hedef bitmap ya 0 ya 255 olmalı. Değilse ve ignorePixel=1 ise temizlemeye çalış.
+            // --- RULE 1: IGNORE PIXEL ---
+            // Target bitmap must be 0 or 255. Otherwise, if ignorePixel=1, try to clean it up.
 
             if (currentBmp == 0 || currentBmp == 255)
             {
@@ -6677,23 +6675,23 @@ TIPS
             }
             else if (ignorePixel == 1)
             {
-                // Sadece 1 bit set edilmiş mi? (Örn: 00000100 -> Paper görünüyor ama 1 pixel kirli)
-                // (x & (x - 1)) == 0 formülü, sayının 2'nin kuvveti olup olmadığını (tek bit set) kontrol eder.
+                // Is only one bit set? (e.g. 00000100 -> Paper is visible yet one pixel is noisy)
+                // (x & (x - 1)) == 0 checks whether the value is a power of two (single bit set).
                 if ((currentBmp & (currentBmp - 1)) == 0)
                 {
-                    cleanBmp = 0; // Kirli Paper -> Temiz Paper yap
+                    cleanBmp = 0; // dirty Paper -> clean Paper
                     isClean = true;
                 }
-                // Sadece 1 bit unset (0) edilmiş mi? (Örn: 11111011 -> Ink görünüyor ama 1 pixel kirli)
-                // Tersi alındığında 2'nin kuvveti olmalı.
+                // Is only one bit cleared? (e.g. 11111011 -> Ink is visible yet one pixel is noisy)
+                // When inverted the result must be a power of two.
                 else if ((~currentBmp & (~currentBmp - 1)) == 0)
                 {
-                    cleanBmp = 255; // Kirli Ink -> Temiz Ink yap
+                    cleanBmp = 255; // dirty Ink -> clean Ink
                     isClean = true;
                 }
             }
 
-            if (!isClean) return false; // Temizlenemeyen karışık bitmap, işlem iptal.
+            if (!isClean) return false; // cannot clean mixed bitmap, abort.
 
 
             // Renkleri al
@@ -6702,49 +6700,48 @@ TIPS
             int[] sC = getattr((byte)srcAttr); // [0]Ink, [1]Paper, [2]Bright
             int[] tC = getattr((byte)trgAttr);
 
-            // --- KURAL 2: IGNORE BRIGHT ---
+            // --- RULE 2: IGNORE BRIGHT ---
             if (ignoreBright == 0)
             {
-                if (sC[2] != tC[2]) return false; // Parlaklık tutmuyorsa iptal
+                if (sC[2] != tC[2]) return false; // brightness mismatch, abort
             }
-            // ignoreBright=1 ise parlaklık kontrolünü atlıyoruz. 
-            // Not: Taşıma yaparken Kaynak rengi Hedefe kopyalayacağımız için
-            // hedef hücrenin parlaklığı değişecek (Kaynak neyse o olacak).
+            // For ignoreBright=1 we skip the check.
+            // Note: once the transfer happens the target brightness follows the source anyway.
 
 
-            // Hedefin şu an görünen rengini bul
+            // Determine the currently visible color on the target
             int targetVisibleColor = (cleanBmp == 255) ? tC[0] : tC[1];
 
-            // --- KURAL 3: SIMILAR COLOR ---
-            // Hedefin görünen rengi, Kaynağın INK veya PAPER rengiyle uyuşuyor mu?
+            // --- RULE 3: SIMILAR COLOR ---
+            // Does the target's visible color match the source INK or PAPER color?
 
             bool matchFound = false;
             byte newTargetBitmap = 0;
 
-            // Kaynak INK ile karşılaştır
+            // Compare with source INK
             if (CheckColorMatch(targetVisibleColor, sC[0], similarColor))
             {
                 matchFound = true;
-                newTargetBitmap = 255; // Hedef artık Kaynağın INK'ini göstermeli
+                newTargetBitmap = 255; // target must now show the source INK
             }
-            // Kaynak PAPER ile karşılaştır
+            // Compare with source PAPER
             else if (CheckColorMatch(targetVisibleColor, sC[1], similarColor))
             {
                 matchFound = true;
-                newTargetBitmap = 0; // Hedef artık Kaynağın PAPER'ını göstermeli
+                newTargetBitmap = 0; // target must now show the source PAPER
             }
 
             if (matchFound)
             {
-                // --- UYGULAMA ---
+                // --- APPLY ---
 
-                // 1. Attribute Kopyala (Kaynaktan Hedefe)
+                // 1. Copy attribute (source -> target)
                 mlt[x, targetY] = srcAttr;
 
-                // 2. Bitmap Güncelle (Temizlenmiş ve gerekirse ters çevrilmiş hali)
+                // 2. Update bitmap (cleaned and flipped if needed)
                 bmp[x, targetY] = newTargetBitmap;
 
-                // 3. Yükleri Güncelle
+                // 3. Update loads
                 chex[x, sourceY] = 0;
                 chex[x, targetY] = 1;
                 totmlt[sourceY]--;
@@ -6758,21 +6755,20 @@ TIPS
 
         private bool CheckColorMatch(int c1, int c2, int similarEnabled)
         {
-            // Parlaklıkları soyutlayıp (mod 8) sadece ana renklere bakalım
-            // Çünkü zaten ignoreBright ile parlaklık engelini aştıysak veya parlaklıklar eşitse,
-            // burada sadece ton karşılaştırmalıyız.
+            // Strip brightness (mod 8) so we only compare core colors,
+            // since ignoreBright already handles brightness or they match.
             int base1 = c1 % 8;
             int base2 = c2 % 8;
 
-            if (base1 == base2) return true; // Tam eşleşme
+            if (base1 == base2) return true; // exact match
 
             if (similarEnabled == 1)
             {
-                // Kırmızı(2) <=> Mor(3)
+                // Red(2) <=> Magenta(3)
                 if ((base1 == 2 && base2 == 3) || (base1 == 3 && base2 == 2)) return true;
-                // Yeşil(4) <=> Cyan(5)
+                // Green(4) <=> Cyan(5)
                 if ((base1 == 4 && base2 == 5) || (base1 == 5 && base2 == 4)) return true;
-                // Sarı(6) <=> Beyaz(7)
+                // Yellow(6) <=> White(7)
                 if ((base1 == 6 && base2 == 7) || (base1 == 7 && base2 == 6)) return true;
             }
 
@@ -6783,7 +6779,7 @@ TIPS
             BalanceThreshold = Convert.ToInt32(txtBalance.Text);
             int moved = 0;
 
-            // 1. Mevcut yük durumunu hesapla (totmlt dizisini sıfırlayıp doldur)
+            // 1. Compute the current load (clear and refill the totmlt array)
             Array.Clear(totmlt, 0, totmlt.Length);
             for (int y = 0; y < 192; y++)
             {
@@ -6793,20 +6789,20 @@ TIPS
                 }
             }
 
-            // 2. Dengeleme Döngüsü
-            // 1. satırdan başlıyoruz çünkü 0. satırın üstüne yük itemeyiz.
+            // 2. Balancing loop
+            // Start at row 1 because nothing can push above row 0.
             for (int y = 1; y < 192; y++)
             {
-                // Eğer bu satır eşiği aşıyorsa VE üst satırda yer varsa
+                // If this row exceeds the threshold AND the row above has room
                 if (totmlt[y] > BalanceThreshold)
                 {
-                    // Üst satırın (y-1) limiti aşmadığından emin ol
-                    // Not: İlk raster (0) genellikle limitsiz kabul edilir ama biz yine de threshold kontrolü yapalım
+                    // Ensure the upper row (y-1) is still below the limit
+                    // Note: raster 0 is often treated as unlimited, but we apply the threshold anyway
                     if (totmlt[y - 1] < BalanceThreshold)
                     {
-                        // Yükü yukarı itmeye çalış
+                        // Attempt to push the load upwards
                         int before = totmlt[y];
-                        CopyFromAboveRaster(y); // Bu fonksiyon artık "PushLoadToAbove" gibi çalışacak
+                        CopyFromAboveRaster(y); // this now behaves like PushLoadToAbove
                         int after = totmlt[y];
 
                         moved += (before - after);
@@ -6837,21 +6833,21 @@ TIPS
         }
         private void CopyFromAboveRaster(int y)
         {
-            // y: Kaynak (Yükü fazla olan satır)
-            // y-1: Hedef (Yükü alacak olan üst satır)
+            // y: source row (overloaded)
+            // y-1: target row (will receive load)
 
-            // Sağdan sola tarama yapmak genelde raster zamanlaması için daha avantajlıdır
-            // ama görsel tutarlılık için soldan sağa da gidilebilir. Burada mevcut yapıyı koruyalım.
+            // Scanning right-to-left generally improves raster timing,
+            // though left-to-right would work for visual consistency; keep the current approach.
             for (int x = 31; x >= 0; x--)
             {
-                // Kriterler:
-                // 1. Mevcut hücre MLT olmalı (chex=1)
-                // 2. Üst hücre MLT olmamalı (chex=0) -> Yani üst hücre müsait
+                // Criteria:
+                // 1. Current cell must be MLT (chex=1)
+                // 2. The upper cell must not be MLT (chex=0) -> destination is free
                 if (chex[x, y] == 1 && chex[x, y - 1] == 0)
                 {
-                    // Renkleri al
-                    // mlt[x, y] -> Aşağıdaki renk (Bunu yukarı taşıyacağız)
-                    // mlt[x, y-1] -> Yukarıdaki mevcut renk (Bunu ezeceğiz, ama görseli korumaya çalışacağız)
+                    // Fetch colors
+                    // mlt[x, y] -> source color (to be pushed upward)
+                    // mlt[x, y-1] -> current upper color (will be overwritten, but we try to preserve visuals)
 
                     int[] cDown = getattr((byte)mlt[x, y]);     // [0]Ink, [1]Paper, [2]Bright
                     int[] cUp = getattr((byte)mlt[x, y - 1]);   // [0]Ink, [1]Paper, [2]Bright
@@ -6859,19 +6855,19 @@ TIPS
                     bool match = false;
                     bool invertNeeded = false;
 
-                    // --- Renk Eşleştirme Mantığı ---
+                    // --- Color matching logic ---
 
-                    // Durum 1: Renkler birebir uyuşuyor mu? (Örn: Aşağısı Mavi/Sarı, Yukarısı da Mavi/Sarı pixel içeriyor)
-                    // Eğer brightness (parlaklık) tutuyorsa şansımız yüksek.
+                    // Case 1: do the colors match exactly? (e.g. lower cell is Blue/Yellow and upper cell also shows Blue/Yellow)
+                    // A brightness match gives us a good chance.
                     if (cDown[2] == cUp[2])
                     {
-                        // Ink veya Paper renklerinden biri ortak mı?
+                        // Do either Ink or Paper colors line up?
                         if (cDown[0] == cUp[0] || cDown[1] == cUp[1])
                         {
                             match = true;
                             invertNeeded = false;
                         }
-                        // Renkler ters mi? (Aşağısı Mavi/Sarı, Yukarısı Sarı/Mavi)
+                        // Are colors reversed? (e.g. lower Ink matches upper Paper)
                         else if (cDown[0] == cUp[1] || cDown[1] == cUp[0])
                         {
                             match = true;
@@ -6879,47 +6875,47 @@ TIPS
                         }
                     }
 
-                    // Durum 2: Üst satır "Boş" veya Tek Renk ise (Eski kodun tek yaptığı buydu, ama artık daha geniş)
-                    // Eğer üst satırın bitmap'i tamamen 0 (Full Paper) veya 255 (Full Ink) ise,
-                    // Üst satırın rengini değiştirmek görsel olarak daha az hasar verir.
+                    // Case 2: the upper row is "empty" or single-colored (legacy behaviour, now extended)
+                    // If the upper bitmap is entirely 0 (Full Paper) or 255 (Full Ink),
+                    // changing its color does less visual harm.
                     if (!match)
                     {
-                        if (bmp[x, y - 1] == 0) // Üst satır sadece PAPER rengini gösteriyor
+                        if (bmp[x, y - 1] == 0) // Upper row is showing PAPER only
                         {
-                            // Eğer aşağıya taşıyacağımız rengin PAPER'ı, üstteki PAPER ile aynıysa
-                            // Veya aşağıdakinin INK'i üstteki PAPER ile aynıysa (invert ile)
+                            // If the PAPER color we move up matches the upper PAPER,
+                            // or the lower INK matches the upper PAPER (with inversion)
                             if (cDown[1] == cUp[1]) { match = true; invertNeeded = false; }
                             else if (cDown[0] == cUp[1]) { match = true; invertNeeded = true; }
                         }
-                        else if (bmp[x, y - 1] == 255) // Üst satır sadece INK rengini gösteriyor
+                        else if (bmp[x, y - 1] == 255) // Upper row is showing INK only
                         {
                             if (cDown[0] == cUp[0]) { match = true; invertNeeded = false; }
                             else if (cDown[1] == cUp[0]) { match = true; invertNeeded = true; }
                         }
                     }
 
-                    // --- İşlem ---
+                    // --- Action ---
                     if (match)
                     {
-                        // 1. Attribute'u yukarı taşı (Yükü yukarı it)
+                        // 1. Move the attribute upward (push the load)
                         mlt[x, y - 1] = mlt[x, y];
 
-                        // 2. Üst satırın bitmap'ini yeni renklere uydurmak için gerekirse ters çevir
-                        // Bu işlem üst satırın görsel bütünlüğünü korumaya çalışır
+                        // 2. Invert the upper bitmap if needed to fit the new colors
+                        // This tries to keep the upper row visually consistent
                         if (invertNeeded)
                         {
                             bmp[x, y - 1] = (byte)(~bmp[x, y - 1]);
                         }
 
-                        // 3. Flagleri güncelle
-                        chex[x, y] = 0;       // Artık aşağısı MLT değil (yük azaldı)
-                        chex[x, y - 1] = 1;   // Yukarısı artık MLT (yük arttı)
+                        // 3. Update flags
+                        chex[x, y] = 0;       // lower cell no longer MLT (load reduced)
+                        chex[x, y - 1] = 1;   // upper cell now MLT (load increased)
 
-                        // 4. Sayaçları güncelle
+                        // 4. Update counters
                         totmlt[y]--;
                         totmlt[y - 1]++;
 
-                        // 5. Eğer üst satırın kapasitesi dolduysa veya mevcut satır rahatladıysa döngüden çık
+                        // 5. Exit loop if the upper row hits capacity or the current row is relieved
                         if (totmlt[y - 1] >= BalanceThreshold) break;
                         if (totmlt[y] <= BalanceThreshold) break;
                     }
@@ -6934,34 +6930,34 @@ TIPS
             {
                 if ((chex[k, y] != 0) && (chex[k, y - 1] == 0))
                 {
-                    int[] g = getattr((byte)mlt[k, y]);     // Kaynak (alttaki)
-                    int[] r = getattr((byte)mlt[k, y - 1]); // Hedef (üstteki)
+                    int[] g = getattr((byte)mlt[k, y]);     // source (lower)
+                    int[] r = getattr((byte)mlt[k, y - 1]); // target (upper)
 
-                    if (r[0] != r[1]) continue; // Hedefin tek renkli olduğunu garantile
+                    if (r[0] != r[1]) continue; // ensure the target is single-colored
 
                     bool matchFound = false;
                     bool needsInvert = false;
 
-                    // Kural 2: Siyah Renge Özel Durum (Parlaklık kontrolü yok)
+                    // Rule 2: special handling for black (skip brightness check)
                     if (IsColorBlack(r[0]))
                     {
-                        if (IsColorBlack(g[0])) // Siyah INK ile eşleşme
+                        if (IsColorBlack(g[0])) // match with black INK
                         {
                             matchFound = true;
                             needsInvert = false;
                         }
-                        else if (IsColorBlack(g[1])) // Siyah PAPER ile eşleşme
+                        else if (IsColorBlack(g[1])) // match with black PAPER
                         {
                             matchFound = true;
                             needsInvert = true;
                         }
                     }
 
-                    // Eğer siyah kuralı uygulanmadıysa, normal kuralları uygula
+                    // If black did not trigger, apply the normal rules
                     if (!matchFound)
                     {
-                        // Kural 1 & 3: Normal ve Benzer Renk Eşleşmesi (Parlaklık kontrolü var)
-                        if (g[2] == r[2]) // Parlaklık bitleri uyuşmalı
+                        // Rule 1 & 3: exact or similar color match (brightness must align)
+                        if (g[2] == r[2]) // brightness bits must match
                         {
                             bool inkMatch = processSimilar ? AreColorsSimilar(r[0], g[0]) : (r[0] == g[0]);
                             bool paperMatch = processSimilar ? AreColorsSimilar(r[0], g[1]) : (r[0] == g[1]);
@@ -6969,33 +6965,33 @@ TIPS
                             if (inkMatch)
                             {
                                 matchFound = true;
-                                needsInvert = false; // INK eşleşti, rolleri değiştirme
+                                needsInvert = false; // INK matched, keep roles
                             }
                             else if (paperMatch)
                             {
                                 matchFound = true;
-                                needsInvert = true;  // PAPER eşleşti, rolleri ters çevir
+                                needsInvert = true;  // PAPER matched, invert roles
                             }
                         }
                     }
 
-                    // === EYLEM KISMI ===
+                    // === ACTION ===
                     if (matchFound)
                     {
-                        // 1. Attribute verisini üst hücreye kopyala.
+                        // 1. Copy attribute data to the upper cell.
                         mlt[k, y - 1] = mlt[k, y];
 
-                        // 2. Bitmap verisini kopyala (gerekirse ters çevirerek).
+                        // 2. Copy bitmap data (invert if needed).
                         bmp[k, y - 1] = needsInvert ? (byte)~bmp[k, y] : bmp[k, y];
 
-                        // 3. Durum bayraklarını ve sayaçları güncelle.
+                        // 3. Update state flags and counters.
                         chex[k, y] = 0;
                         totmlt[y]--;
                         chex[k, y - 1] = 1;
                         totmlt[y - 1]++;
 
-                        // 4. Dengeleme eşiklerini kontrol et.
-                        if ((totmlt[y - 1] > BalanceThreshold) && (y % 8 != 0)) break; //first raster has no limit
+                        // 4. Check balancing thresholds.
+                        if ((totmlt[y - 1] > BalanceThreshold) && (y % 8 != 0)) break; // first raster has no limit
                         if (totmlt[y] <= BalanceThreshold) break;
                     }
                 }
@@ -7033,22 +7029,22 @@ TIPS
 
 
         /// <summary>
-        /// Verilen iki rengin benzer olup olmadığını kontrol eder (processSimilar=true durumu için).
-        /// Kırmızı <=> Mor, Yeşil <=> Cyan, Sarı <=> Beyaz çiftlerini ve birebir eşleşmeleri kontrol eder.
+        /// Checks whether two colors should be treated as similar (when processSimilar=true).
+        /// Considers Red <=> Magenta, Green <=> Cyan, Yellow <=> White plus exact matches.
         /// </summary>
         private bool AreColorsSimilar(int color1, int color2)
         {
             if (color1 == color2) return true;
 
-            // Renkleri parlaklık (brightness) bilgisinden arındırarak temel renkleri karşılaştıralım.
+            // Strip brightness to compare only the base colors.
             int baseColor1 = color1 % 8;
             int baseColor2 = color2 % 8;
 
-            // Kırmızı (2) <=> Mor (3)
+            // Red (2) <=> Magenta (3)
             if ((baseColor1 == 2 && baseColor2 == 3) || (baseColor1 == 3 && baseColor2 == 2)) return true;
-            // Yeşil (4) <=> Cyan (5)
+            // Green (4) <=> Cyan (5)
             if ((baseColor1 == 4 && baseColor2 == 5) || (baseColor1 == 5 && baseColor2 == 4)) return true;
-            // Sarı (6) <=> Beyaz (7)
+            // Yellow (6) <=> White (7)
             if ((baseColor1 == 6 && baseColor2 == 7) || (baseColor1 == 7 && baseColor2 == 6)) return true;
 
             return false;
@@ -7057,7 +7053,7 @@ TIPS
 
     private void pNGBMPImageToolStripMenuItem_Click(object sender, EventArgs e)
     {
-        // 1. Dosya Seçme Penceresi (OpenFileDialog) Oluşturma
+        // 1. Create the file picker (OpenFileDialog)
         OpenFileDialog openFileDialog = new OpenFileDialog();
         openFileDialog.Title = "Dönüştürülecek Resmi Seçin";
         openFileDialog.Filter = "Resim Dosyaları|*.png;*.bmp|Tüm Dosyalar|*.*";
@@ -7066,8 +7062,8 @@ TIPS
         {
             try
             {
-                // Seçilen resmi yükle
-                // Not: Dosya kilitleme sorununu önlemek için FileStream ile açıp Bitmap kopyası oluşturuyoruz
+                // Load the selected image
+                // Note: use FileStream and clone the bitmap to avoid file locking
                 
                 using (var stream = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read))
                 {
@@ -7099,10 +7095,10 @@ TIPS
             }
             if (noProcess) return;
 
-            // ... (Parametre hazırlama kısmı aynı kalacak) ...
+            // ... (Parameter preparation stays the same) ...
             var parameters = new MLTConverter.ConversionParams
             {
-                // ... (Parametreleriniz buraya)
+                // ... (Place your parameters here)
                 RedLow = rangeSliderNet41.LowerValue,
                 // ...
             };
@@ -7110,7 +7106,7 @@ TIPS
             MLTConverter converter = new MLTConverter();
             var result = converter.ConvertImage(originalImage, parameters);
 
-            // -- SEÇİM ALANI HESAPLAMA --
+            // -- SELECTION AREA CALCULATION --
             int startCellX = 0;
             int endCellX = 31;
             int startCellY = 0;
@@ -7118,15 +7114,15 @@ TIPS
 
             if (hasValidSelection)
             {
-                // Piksel koordinatlarını Hücre (Cell) koordinatlarına çevir (0-31, 0-191)
-                // Math.Min/Max kullanıyoruz çünkü kullanıcı tersten seçim yapmış olabilir
+                // Convert pixel coordinates to cell coordinates (0-31, 0-191)
+                // Use Math.Min/Max because the user may select in reverse order
                 int pX1 = Math.Min(selectionStart.X, selectionEnd.X);
                 int pY1 = Math.Min(selectionStart.Y, selectionEnd.Y);
                 int pX2 = Math.Max(selectionStart.X, selectionEnd.X);
                 int pY2 = Math.Max(selectionStart.Y, selectionEnd.Y);
 
-                // cw ve ch global zoom değişkenlerinizdir.
-                // Genelde: x / cw = 0..31 aralığını verir.
+                // cw and ch are your global zoom variables.
+                // Typically: x / cw yields the 0..31 range.
                 startCellX = Math.Max(0, pX1 / cw);
                 endCellX = Math.Min(31, pX2 / cw);
 
@@ -7134,15 +7130,15 @@ TIPS
                 endCellY = Math.Min(191, pY2 / ch);
             }
 
-            // -- KOPYALAMA --
-            // Tüm resmi dönüştürdük (result içinde), ama sadece belirlediğimiz alanı kopyalıyoruz.
+            // -- COPY PHASE --
+            // The entire image is converted (inside result) but we only copy the selected area.
 
             for (int y = 0; y < 192; y++)
             {
                 for (int x = 0; x < 32; x++)
                 {
-                    // Eğer bir seçim varsa VE şu anki x,y bu seçimin dışındaysa
-                    // bu hücreyi atla (eski hali kalsın)
+                    // When a selection exists and the current cell is outside the range,
+                    // skip it so the previous content stays intact.
                     if (hasValidSelection)
                     {
                         if (x < startCellX || x > endCellX || y < startCellY || y > endCellY)
@@ -7172,7 +7168,7 @@ TIPS
             }
             if (noProcess) return; //prevent loop
 
-            // 2. Parametreleri Hazırla (Sizin belirlediğiniz değerler)
+            // 2. Prepare parameters (your chosen values)
             var parameters = new MLTConverter.ConversionParams
             {
                 RedLow = rangeSliderNet41.LowerValue,
@@ -7181,15 +7177,16 @@ TIPS
                 GreenHigh = rangeSliderNet42.UpperValue,
                 BlueLow = rangeSliderNet43.LowerValue,
                 BlueHigh = rangeSliderNet43.UpperValue,
-                BrightLow = rangeSliderNet44.LowerValue,
-                BrightHigh = rangeSliderNet44.UpperValue,
+                Bright = rangeSliderNet44.LowerValue,
+                //BrightHigh = rangeSliderNet44.UpperValue,
+                BrightMode = 2,
                 FlipDither = chkMltFlip.Checked,
-                Use4Color = chkMltLevel.Checked,
-                ForceBright = chkMltBri.Checked,
-                NoBright = chkMltNobri.Checked
+                Use4Color = chkMltLevel.Checked
+                //ForceBright = chkMltBri.Checked,
+                //NoBright = chkMltNobri.Checked
             };
 
-            // 3. Çeviriciyi Başlat ve Dönüştür
+            // 3. Instantiate the converter and run the transformation
             MLTConverter converter = new MLTConverter();
             int startCellX = 0;
             int endCellX = 31;
@@ -7198,15 +7195,15 @@ TIPS
 
             if (hasValidSelection)
             {
-                // Piksel koordinatlarını Hücre (Cell) koordinatlarına çevir (0-31, 0-191)
-                // Math.Min/Max kullanıyoruz çünkü kullanıcı tersten seçim yapmış olabilir
+                // Convert pixel coordinates to cell coordinates (0-31, 0-191)
+                // Use Math.Min/Max in case the user dragged the selection backwards
                 int pX1 = Math.Min(selectionStart.X, selectionEnd.X);
                 int pY1 = Math.Min(selectionStart.Y, selectionEnd.Y);
                 int pX2 = Math.Max(selectionStart.X, selectionEnd.X);
                 int pY2 = Math.Max(selectionStart.Y, selectionEnd.Y);
 
-                // cw ve ch global zoom değişkenlerinizdir.
-                // Genelde: x / cw = 0..31 aralığını verir.
+                // cw and ch are global zoom variables.
+                // Typically x / cw gives the 0..31 range.
                 startCellX = Math.Max(0, pX1 / cw);
                 endCellX = Math.Min(31, pX2 / cw);
 
@@ -7214,7 +7211,7 @@ TIPS
                 endCellY = Math.Min(191, pY2 / ch);
             }
 
-            // Dönüşüm işlemi
+            // Run the conversion
             var result = converter.ConvertImage(originalImage, parameters);
             for (int y = 0; y < 192; y++)
             {
@@ -7228,13 +7225,13 @@ TIPS
                         }
                     }
 
-                    // 1D array içindeki index formülü: (Satır No * Genişlik) + Sütun No
+                    // Index formula inside the 1D array: (row * width) + column
                     int linearIndex = (y * 32) + x;
 
-                    // Bitmap verisini aktar
+                    // Copy bitmap data
                     bmp[x, y] = result.BitmapData[linearIndex];
 
-                    // Attribute verisini aktar (byte -> int dönüşümü otomatik yapılır)
+                    // Copy attribute data (byte -> int promotion happens automatically)
                     mlt[x, y] = result.AttributeData[linearIndex];
                 }
             }
@@ -7305,7 +7302,7 @@ TIPS
 
 
         /// <summary>
-        /// Bir rengin siyah olup olmadığını kontrol eder (Normal Siyah: 0, Parlak Siyah: 8).
+        /// Checks whether a color is black (normal black=0, bright black=8).
         /// </summary>
         private bool IsColorBlack(int color)
         {
@@ -7314,34 +7311,34 @@ TIPS
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
-            // Eğer seçim yapılıyorsa veya geçerli bir seçim varsa çiz
+            // Render the selection overlay if we are selecting or have a valid selection
             if (isSelectionActive || hasValidSelection)
             {
-                // Koordinatları 8x1 grid'e (cw ve ch) snap (yapıştırma) işlemi
-                // Not: cw=8*density, ch=cw/8 varsayımıyla (Cell Width/Height)
+                // Snap coordinates to the 8x1 grid defined by cw/ch
+                // Note: cw = 8 * density, ch = cw / 8 by assumption (cell width/height)
 
                 int startX = Math.Min(selectionStart.X, selectionEnd.X);
                 int startY = Math.Min(selectionStart.Y, selectionEnd.Y);
                 int endX = Math.Max(selectionStart.X, selectionEnd.X);
                 int endY = Math.Max(selectionStart.Y, selectionEnd.Y);
 
-                // Grid'e hizala (Snap to grid)
+                // Snap to grid
                 int gridSX = (startX / cw) * cw;
                 int gridSY = (startY / ch) * ch;
-                int gridEX = ((endX / cw) + 1) * cw; // +1 sağ kenarı kapsamak için
+                int gridEX = ((endX / cw) + 1) * cw; // +1 to include the right edge
                 int gridEY = ((endY / ch) + 1) * ch;
 
                 int width = gridEX - gridSX;
                 int height = gridEY - gridSY;
 
-                // Seçim kutusunu çiz (Sarı, kesikli çizgi)
+                // Draw the selection rectangle (yellow, dashed)
                 using (Pen pen = new Pen(Color.Yellow, 2))
                 {
                     pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                     e.Graphics.DrawRectangle(pen, gridSX, gridSY, width, height);
                 }
 
-                // İçi hafif dolu görünüm (Opsiyonel)
+                // Optional soft fill
                 using (Brush brush = new SolidBrush(Color.FromArgb(15, 255, 255, 255)))
                 {
                     e.Graphics.FillRectangle(brush, gridSX, gridSY, width, height);
@@ -7353,8 +7350,8 @@ TIPS
         {
             if (isSelectionActive || hasValidSelection)
             {
-                // Koordinatları 8x1 grid'e (cw ve ch) snap (yapıştırma) işlemi
-                // Not: cw=8*density, ch=cw/8 varsayımıyla (Cell Width/Height)
+                // Snap coordinates to the 8x1 grid defined by cw/ch
+                // Note: cw = 8 * density, ch = cw / 8 (cell width/height assumption)
 
                 int startX = Math.Min(selectionStart.X, selectionEnd.X);
                 int startY = Math.Min(selectionStart.Y, selectionEnd.Y);
@@ -7362,28 +7359,39 @@ TIPS
                 int endY = Math.Max(selectionStart.Y, selectionEnd.Y);
                 int mcw = 1;
                 int mch = 1;
-                // Grid'e hizala (Snap to grid)
+                // Snap to grid
                 int gridSX = (startX / density) * mcw;
                 int gridSY = (startY / density) * mch;
-                int gridEX = ((endX / density) + 1) * mcw; // +1 sağ kenarı kapsamak için
+                int gridEX = ((endX / density) + 1) * mcw; // +1 to include the right edge
                 int gridEY = ((endY / density) + 1) * mch;
 
                 int width = gridEX - gridSX;
                 int height = gridEY - gridSY;
 
-                // Seçim kutusunu çiz (Sarı, kesikli çizgi)
+                // Draw the selection rectangle (yellow, dashed)
                 using (Pen pen = new Pen(Color.Yellow, 2))
                 {
                     pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                     e.Graphics.DrawRectangle(pen, gridSX, gridSY, width, height);
                 }
 
-                // İçi hafif dolu görünüm (Opsiyonel)
+                // Optional soft fill
                 using (Brush brush = new SolidBrush(Color.FromArgb(33, 255, 255, 255)))
                 {
                     e.Graphics.FillRectangle(brush, gridSX, gridSY, width, height);
                 }
             }
+        }
+
+        private void chkMltLevel_CheckedChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
+
+        }
+
+        private void chkMltFlip_CheckedChanged(object sender, EventArgs e)
+        {
+            ExecuteConversion();
         }
 
         private void CopyFromBelowRaster(int y) //auto fix utility
@@ -7557,7 +7565,7 @@ TIPS
             if (isSelectionActive)
             {
                 isSelectionActive = false;
-                // Başlangıç ve bitiş noktaları aynı değilse geçerli bir seçim vardır
+                // A valid selection exists when the start and end points differ
                 if (selectionStart != selectionEnd)
                 {
                     hasValidSelection = true;
@@ -7567,7 +7575,7 @@ TIPS
             }
             else
             {
-                isHeldDown = false; // Mevcut kod
+                isHeldDown = false; // existing logic
             }
         }
         private void pictureBox1_MouseUp2(object sender, MouseEventArgs e)
@@ -7594,7 +7602,7 @@ TIPS
               for (int y=0;y<192;y++)
                 for (int x = 0; x < 32; x++)
                 {
-                    var rx = getattr((byte)mlt[x, y]);  //renkler brighness ile toplanmış şekilde dönüyor
+                    var rx = getattr((byte)mlt[x, y]);  //colors return already combined with brightness
 
                     if (rx[0] == fromColor)
                     {

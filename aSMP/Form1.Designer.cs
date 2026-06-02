@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("");
-            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("");
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.textBox8 = new System.Windows.Forms.TextBox();
@@ -188,6 +188,11 @@
             this.chkMltBri = new System.Windows.Forms.CheckBox();
             this.chkMltLevel = new System.Windows.Forms.CheckBox();
             this.chkMltFlip = new System.Windows.Forms.CheckBox();
+            this.rangeSliderNet45 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet44 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet43 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet42 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet41 = new aSMP.RangeSliderNet4();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.label3 = new System.Windows.Forms.Label();
             this.textBox3 = new System.Windows.Forms.TextBox();
@@ -234,18 +239,13 @@
             this.sCRBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.pasteToSCRBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ımportToSCRBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripSeparator();
+            this.importToConversionBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.usageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.textZX7 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.txtZX0 = new System.Windows.Forms.TextBox();
-            this.toolStripMenuItem6 = new System.Windows.Forms.ToolStripSeparator();
-            this.importToConversionBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.rangeSliderNet45 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet44 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet43 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet42 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet41 = new aSMP.RangeSliderNet4();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
             this.tabControl1.SuspendLayout();
@@ -2034,6 +2034,7 @@
             this.chkMltLevel.TabIndex = 5;
             this.chkMltLevel.Text = "4 Levels";
             this.chkMltLevel.UseVisualStyleBackColor = true;
+            this.chkMltLevel.CheckedChanged += new System.EventHandler(this.chkMltLevel_CheckedChanged);
             // 
             // chkMltFlip
             // 
@@ -2044,6 +2045,82 @@
             this.chkMltFlip.TabIndex = 4;
             this.chkMltFlip.Text = "Flip";
             this.chkMltFlip.UseVisualStyleBackColor = true;
+            this.chkMltFlip.CheckedChanged += new System.EventHandler(this.chkMltFlip_CheckedChanged);
+            // 
+            // rangeSliderNet45
+            // 
+            this.rangeSliderNet45.Location = new System.Drawing.Point(67, 13);
+            this.rangeSliderNet45.LowerValue = 80;
+            this.rangeSliderNet45.MaxValue = 255;
+            this.rangeSliderNet45.MinValue = 0;
+            this.rangeSliderNet45.Name = "rangeSliderNet45";
+            this.rangeSliderNet45.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet45.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet45.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet45.TabIndex = 9;
+            this.rangeSliderNet45.Text = "ALL";
+            this.rangeSliderNet45.UpperValue = 160;
+            this.rangeSliderNet45.RangeChanged += new System.EventHandler(this.rangeSliderNet45_RangeChanged);
+            // 
+            // rangeSliderNet44
+            // 
+            this.rangeSliderNet44.Location = new System.Drawing.Point(228, 13);
+            this.rangeSliderNet44.LowerValue = 80;
+            this.rangeSliderNet44.MaxValue = 255;
+            this.rangeSliderNet44.MinValue = 0;
+            this.rangeSliderNet44.Name = "rangeSliderNet44";
+            this.rangeSliderNet44.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet44.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet44.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet44.TabIndex = 3;
+            this.rangeSliderNet44.Text = "rangeSliderNet44";
+            this.rangeSliderNet44.UpperValue = 255;
+            this.rangeSliderNet44.RangeChanged += new System.EventHandler(this.rangeSliderNet44_RangeChanged);
+            // 
+            // rangeSliderNet43
+            // 
+            this.rangeSliderNet43.Location = new System.Drawing.Point(191, 13);
+            this.rangeSliderNet43.LowerValue = 80;
+            this.rangeSliderNet43.MaxValue = 255;
+            this.rangeSliderNet43.MinValue = 0;
+            this.rangeSliderNet43.Name = "rangeSliderNet43";
+            this.rangeSliderNet43.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet43.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet43.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet43.TabIndex = 2;
+            this.rangeSliderNet43.Text = "rangeSliderNet43";
+            this.rangeSliderNet43.UpperValue = 160;
+            this.rangeSliderNet43.RangeChanged += new System.EventHandler(this.rangeSliderNet43_RangeChanged);
+            // 
+            // rangeSliderNet42
+            // 
+            this.rangeSliderNet42.Location = new System.Drawing.Point(154, 13);
+            this.rangeSliderNet42.LowerValue = 80;
+            this.rangeSliderNet42.MaxValue = 255;
+            this.rangeSliderNet42.MinValue = 0;
+            this.rangeSliderNet42.Name = "rangeSliderNet42";
+            this.rangeSliderNet42.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet42.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet42.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet42.TabIndex = 1;
+            this.rangeSliderNet42.Text = "rangeSliderNet42";
+            this.rangeSliderNet42.UpperValue = 160;
+            this.rangeSliderNet42.RangeChanged += new System.EventHandler(this.rangeSliderNet42_RangeChanged);
+            // 
+            // rangeSliderNet41
+            // 
+            this.rangeSliderNet41.Location = new System.Drawing.Point(117, 13);
+            this.rangeSliderNet41.LowerValue = 80;
+            this.rangeSliderNet41.MaxValue = 255;
+            this.rangeSliderNet41.MinValue = 0;
+            this.rangeSliderNet41.Name = "rangeSliderNet41";
+            this.rangeSliderNet41.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet41.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet41.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet41.TabIndex = 0;
+            this.rangeSliderNet41.Text = "rangeSliderNet41";
+            this.rangeSliderNet41.UpperValue = 160;
+            this.rangeSliderNet41.RangeChanged += new System.EventHandler(this.rangeSliderNet41_RangeChanged);
             // 
             // pictureBox3
             // 
@@ -2114,8 +2191,8 @@
             this.listView1.FullRowSelect = true;
             this.listView1.HideSelection = false;
             this.listView1.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem1,
-            listViewItem2});
+            listViewItem3,
+            listViewItem4});
             this.listView1.Location = new System.Drawing.Point(369, 424);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(261, 174);
@@ -2404,6 +2481,18 @@
             this.ımportToSCRBufferToolStripMenuItem.Text = "Import to SCR Buffer...";
             this.ımportToSCRBufferToolStripMenuItem.Click += new System.EventHandler(this.ımportToSCRBufferToolStripMenuItem_Click);
             // 
+            // toolStripMenuItem6
+            // 
+            this.toolStripMenuItem6.Name = "toolStripMenuItem6";
+            this.toolStripMenuItem6.Size = new System.Drawing.Size(219, 6);
+            // 
+            // importToConversionBufferToolStripMenuItem
+            // 
+            this.importToConversionBufferToolStripMenuItem.Name = "importToConversionBufferToolStripMenuItem";
+            this.importToConversionBufferToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
+            this.importToConversionBufferToolStripMenuItem.Text = "Import to Conversion Buffer";
+            this.importToConversionBufferToolStripMenuItem.Click += new System.EventHandler(this.pNGBMPImageToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -2438,93 +2527,6 @@
             this.txtZX0.TabIndex = 16;
             this.txtZX0.Text = resources.GetString("txtZX0.Text");
             this.txtZX0.Visible = false;
-            // 
-            // toolStripMenuItem6
-            // 
-            this.toolStripMenuItem6.Name = "toolStripMenuItem6";
-            this.toolStripMenuItem6.Size = new System.Drawing.Size(219, 6);
-            // 
-            // importToConversionBufferToolStripMenuItem
-            // 
-            this.importToConversionBufferToolStripMenuItem.Name = "importToConversionBufferToolStripMenuItem";
-            this.importToConversionBufferToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
-            this.importToConversionBufferToolStripMenuItem.Text = "Import to Conversion Buffer";
-            this.importToConversionBufferToolStripMenuItem.Click += new System.EventHandler(this.pNGBMPImageToolStripMenuItem_Click);
-            // 
-            // rangeSliderNet45
-            // 
-            this.rangeSliderNet45.Location = new System.Drawing.Point(67, 13);
-            this.rangeSliderNet45.LowerValue = 80;
-            this.rangeSliderNet45.MaxValue = 255;
-            this.rangeSliderNet45.MinValue = 0;
-            this.rangeSliderNet45.Name = "rangeSliderNet45";
-            this.rangeSliderNet45.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet45.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet45.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet45.TabIndex = 9;
-            this.rangeSliderNet45.Text = "ALL";
-            this.rangeSliderNet45.UpperValue = 160;
-            this.rangeSliderNet45.RangeChanged += new System.EventHandler(this.rangeSliderNet45_RangeChanged);
-            // 
-            // rangeSliderNet44
-            // 
-            this.rangeSliderNet44.Location = new System.Drawing.Point(228, 13);
-            this.rangeSliderNet44.LowerValue = 80;
-            this.rangeSliderNet44.MaxValue = 255;
-            this.rangeSliderNet44.MinValue = 0;
-            this.rangeSliderNet44.Name = "rangeSliderNet44";
-            this.rangeSliderNet44.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet44.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet44.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet44.TabIndex = 3;
-            this.rangeSliderNet44.Text = "rangeSliderNet44";
-            this.rangeSliderNet44.UpperValue = 255;
-            this.rangeSliderNet44.RangeChanged += new System.EventHandler(this.rangeSliderNet44_RangeChanged);
-            // 
-            // rangeSliderNet43
-            // 
-            this.rangeSliderNet43.Location = new System.Drawing.Point(191, 13);
-            this.rangeSliderNet43.LowerValue = 80;
-            this.rangeSliderNet43.MaxValue = 255;
-            this.rangeSliderNet43.MinValue = 0;
-            this.rangeSliderNet43.Name = "rangeSliderNet43";
-            this.rangeSliderNet43.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet43.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet43.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet43.TabIndex = 2;
-            this.rangeSliderNet43.Text = "rangeSliderNet43";
-            this.rangeSliderNet43.UpperValue = 160;
-            this.rangeSliderNet43.RangeChanged += new System.EventHandler(this.rangeSliderNet43_RangeChanged);
-            // 
-            // rangeSliderNet42
-            // 
-            this.rangeSliderNet42.Location = new System.Drawing.Point(154, 13);
-            this.rangeSliderNet42.LowerValue = 80;
-            this.rangeSliderNet42.MaxValue = 255;
-            this.rangeSliderNet42.MinValue = 0;
-            this.rangeSliderNet42.Name = "rangeSliderNet42";
-            this.rangeSliderNet42.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet42.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet42.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet42.TabIndex = 1;
-            this.rangeSliderNet42.Text = "rangeSliderNet42";
-            this.rangeSliderNet42.UpperValue = 160;
-            this.rangeSliderNet42.RangeChanged += new System.EventHandler(this.rangeSliderNet42_RangeChanged);
-            // 
-            // rangeSliderNet41
-            // 
-            this.rangeSliderNet41.Location = new System.Drawing.Point(117, 13);
-            this.rangeSliderNet41.LowerValue = 80;
-            this.rangeSliderNet41.MaxValue = 255;
-            this.rangeSliderNet41.MinValue = 0;
-            this.rangeSliderNet41.Name = "rangeSliderNet41";
-            this.rangeSliderNet41.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet41.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet41.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet41.TabIndex = 0;
-            this.rangeSliderNet41.Text = "rangeSliderNet41";
-            this.rangeSliderNet41.UpperValue = 160;
-            this.rangeSliderNet41.RangeChanged += new System.EventHandler(this.rangeSliderNet41_RangeChanged);
             // 
             // Form1
             // 
