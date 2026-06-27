@@ -5852,6 +5852,7 @@ namespace aSMP
 
             button10.Enabled = false;
             textBox7.Text = generatecode();
+            btnLoadBalance.Enabled = textBox7.Text.Length > 0;
             button10.Enabled = true;
 
         }
@@ -6806,20 +6807,24 @@ TIPS
 
         private void btnLoadBalance_Click(object sender, EventArgs e)
         {
-            int th = Convert.ToInt32(txtBalance.Text);
+            int th;
+            int targetLine;
 
-            int pxl = chkIgnorePixel.Checked ? 1 : 0;
-            int bri = chkIgnoreBright.Checked ? 1 : 0;
-            int sim = chkSimilarColor.Checked ? 1 : 0;
-            if (chkBalanceAll.Checked)
+            if (textBox7.Text.Length == 0)
             {
-                // Balance the entire screen (-1)
-                PerformBalance(th, -1, pxl, bri, sim);
+                MessageBox.Show("Generate code first.", "Balance", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                btnLoadBalance.Enabled = false;
+                return;
             }
-            else
+
+            if (!Int32.TryParse(txtBalance.Text, out th)) th = 10;
+            if (!Int32.TryParse(txtLastPickedRaster.Text, out targetLine))
             {
-                PerformBalance(th, Convert.ToInt32(txtLastPickedRaster.Text), pxl, bri, sim);
+                MessageBox.Show("Raster line is not valid.", "Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
+
+            PerformBalance(th, targetLine, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
         }
 
         /// <summary>
@@ -6832,15 +6837,195 @@ TIPS
         /// <param name="similarColor">If 1: treat Red=Magenta, Green=Cyan, Yellow=White.</param>
         private void PerformBalance(int threshold, int targetLine, int ignorePixel, int ignoreBright, int similarColor)
         {
-            //insert code here
-            //..
+            if (threshold < 1) threshold = 10;
+            if ((targetLine < 1) || (targetLine > 191))
+            {
+                MessageBox.Show("Balance needs a raster line between 1 and 191.", "Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (IsUnlimitedBalanceRaster(targetLine))
+            {
+                textBox10.Text = "Balance skipped: raster " + targetLine + " has no write limit.";
+                return;
+            }
 
+            int previousLine = targetLine - 1;
+            int moved = 0;
+            int absorbed = 0;
+            bool ignoreBrightness = ignoreBright != 0;
+            bool previousLineUnlimited = IsUnlimitedBalanceRaster(previousLine);
+            int targetLimit = previousLineUnlimited ? 0 : threshold;
+            int previousWrites = CountRasterWrites(previousLine);
+            int targetWrites = CountRasterWrites(targetLine);
 
+            for (int x = 0; x < 32; x++)
+            {
+                if (targetWrites <= targetLimit) break;
+                if (chex[x, targetLine] == 0) continue;
+                if (!previousLineUnlimited && (chex[x, previousLine] == 0) && (previousWrites >= threshold)) break;
+
+                if (TryMoveBalanceWriteToPreviousRaster(x, targetLine, ignoreBrightness))
+                {
+                    if (chex[x, previousLine] == 0)
+                    {
+                        chex[x, previousLine] = 1;
+                        previousWrites++;
+                    }
+
+                    chex[x, targetLine] = 0;
+                    targetWrites--;
+                    moved++;
+                }
+            }
+
+            for (int x = 0; x < 32; x++)
+            {
+                if (targetWrites <= targetLimit) break;
+                if (chex[x, targetLine] == 0) continue;
+
+                if (WouldAbsorbOverflowNextRaster(x, targetLine, threshold))
+                {
+                    continue;
+                }
+                if (TryCopyPreviousRasterColorToSingleColorTarget(x, targetLine, ignoreBrightness))
+                {
+                    chex[x, targetLine] = 0;
+                    UpdateBalanceWriteMarker(x, targetLine + 1);
+                    targetWrites--;
+                    absorbed++;
+                }
+            }
+
+            if ((moved > 0) || (absorbed > 0))
+            {
+                lastcomputedmarks = false;
+                ClearMismatchPreview();
+                textBox7.Text = generatecode();
+                btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+            }
+
+            calcgroups(previousLine);
+            calcgroups(targetLine);
 
             // end of balancing operation
 
             setup(); // refresh the screen
-            textBox10.Text = $"Balanced: xxx blocks moved.";
+            textBox10.Text = "Balanced: " + moved + " moved, " + absorbed + " absorbed.";
+        }
+
+        private bool IsUnlimitedBalanceRaster(int rasterLine)
+        {
+            return (rasterLine >= 0) && (rasterLine <= 191) && ((rasterLine % 8) == 0);
+        }
+
+        private bool WouldAbsorbOverflowNextRaster(int cellX, int targetLine, int threshold)
+        {
+            int nextLine = targetLine + 1;
+            if ((nextLine < 0) || (nextLine > 191)) return false;
+            if (IsUnlimitedBalanceRaster(nextLine)) return false;
+
+            int nextWrites = CountRasterWrites(nextLine);
+            int currentNextMarker = chex[cellX, nextLine] != 0 ? 1 : 0;
+            int nextMarkerAfterAbsorb = mlt[cellX, nextLine] == mlt[cellX, targetLine - 1] ? 0 : 1;
+            int nextWritesAfterAbsorb = nextWrites - currentNextMarker + nextMarkerAfterAbsorb;
+
+            return nextWritesAfterAbsorb > threshold;
+        }
+
+        private int CountRasterWrites(int rasterLine)
+        {
+            if ((rasterLine < 0) || (rasterLine > 191)) return 0;
+
+            int count = 0;
+            for (int x = 0; x < 32; x++)
+            {
+                if (chex[x, rasterLine] != 0) count++;
+            }
+            return count;
+        }
+
+        private bool TryMoveBalanceWriteToPreviousRaster(int cellX, int targetLine, bool ignoreBrightness)
+        {
+            int previousLine = targetLine - 1;
+            byte previousBitmap = bmp[cellX, previousLine];
+
+            if ((previousBitmap != 0) && (previousBitmap != 255)) return false;
+
+            int[] previousColors = getattr((byte)mlt[cellX, previousLine]);
+            int[] targetColors = getattr((byte)mlt[cellX, targetLine]);
+            int visiblePreviousColor = previousBitmap == 255 ? previousColors[0] : previousColors[1];
+
+            bool inkMatches = BalanceColorMatches(visiblePreviousColor, targetColors[0], ignoreBrightness);
+            bool paperMatches = BalanceColorMatches(visiblePreviousColor, targetColors[1], ignoreBrightness);
+
+            if (!inkMatches && !paperMatches) return false;
+
+            mlt[cellX, previousLine] = mlt[cellX, targetLine];
+
+            if (previousBitmap == 255)
+            {
+                bmp[cellX, previousLine] = inkMatches ? (byte)255 : (byte)0;
+            }
+            else
+            {
+                bmp[cellX, previousLine] = paperMatches ? (byte)0 : (byte)255;
+            }
+
+            return true;
+        }
+
+        private void UpdateBalanceWriteMarker(int cellX, int rasterLine)
+        {
+            if ((cellX < 0) || (cellX > 31) || (rasterLine < 0) || (rasterLine > 191)) return;
+
+            if ((rasterLine % 8) == 0)
+            {
+                chex[cellX, rasterLine] = 0;
+                return;
+            }
+
+            chex[cellX, rasterLine] = mlt[cellX, rasterLine] == mlt[cellX, rasterLine - 1] ? 0 : 1;
+        }
+
+        private bool TryCopyPreviousRasterColorToSingleColorTarget(int cellX, int targetLine, bool ignoreBrightness)
+        {
+            int previousLine = targetLine - 1;
+            byte targetBitmap = bmp[cellX, targetLine];
+
+            if ((targetBitmap != 0) && (targetBitmap != 255)) return false;
+
+            int[] targetColors = getattr((byte)mlt[cellX, targetLine]);
+            int[] previousColors = getattr((byte)mlt[cellX, previousLine]);
+            int visibleTargetColor = targetBitmap == 255 ? targetColors[0] : targetColors[1];
+
+            bool previousInkMatches = BalanceColorMatches(visibleTargetColor, previousColors[0], ignoreBrightness);
+            bool previousPaperMatches = BalanceColorMatches(visibleTargetColor, previousColors[1], ignoreBrightness);
+
+            if (!previousInkMatches && !previousPaperMatches) return false;
+
+            mlt[cellX, targetLine] = mlt[cellX, previousLine];
+
+            if (targetBitmap == 255)
+            {
+                bmp[cellX, targetLine] = previousInkMatches ? (byte)255 : (byte)0;
+            }
+            else
+            {
+                bmp[cellX, targetLine] = previousPaperMatches ? (byte)0 : (byte)255;
+            }
+
+            return true;
+        }
+
+        private bool BalanceColorMatches(int color1, int color2, bool ignoreBrightness)
+        {
+            if (ignoreBrightness)
+            {
+                color1 = color1 % 8;
+                color2 = color2 % 8;
+            }
+
+            return color1 == color2;
         }
 
 
