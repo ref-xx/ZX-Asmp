@@ -6824,7 +6824,14 @@ TIPS
                 return;
             }
 
-            PerformBalance(th, targetLine, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
+            if (chkBalanceAll.Checked)
+            {
+                PerformBalance(th, -1, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
+            }
+            else
+            {
+                PerformBalance(th, targetLine, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
+            }
         }
 
         /// <summary>
@@ -6838,21 +6845,69 @@ TIPS
         private void PerformBalance(int threshold, int targetLine, int ignorePixel, int ignoreBright, int similarColor)
         {
             if (threshold < 1) threshold = 10;
-            if ((targetLine < 1) || (targetLine > 191))
+            bool ignoreBrightness = ignoreBright != 0;
+
+            if (targetLine == -1)
             {
-                MessageBox.Show("Balance needs a raster line between 1 and 191.", "Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (IsUnlimitedBalanceRaster(targetLine))
-            {
-                textBox10.Text = "Balance skipped: raster " + targetLine + " has no write limit.";
+                int totalMoved = 0;
+                int totalAbsorbed = 0;
+                int totalBrightMoved = 0;
+                int totalBrightAbsorbed = 0;
+
+                for (int y = 191; y >= 0; y--)
+                {
+                    BalanceResult lineResult = PerformBalanceLine(threshold, y, ignoreBrightness, false);
+                    totalMoved += lineResult.Moved;
+                    totalAbsorbed += lineResult.Absorbed;
+                    totalBrightMoved += lineResult.BrightMoved;
+                    totalBrightAbsorbed += lineResult.BrightAbsorbed;
+                }
+
+                if ((totalMoved > 0) || (totalAbsorbed > 0) || (totalBrightMoved > 0) || (totalBrightAbsorbed > 0))
+                {
+                    lastcomputedmarks = false;
+                    ClearMismatchPreview();
+                    textBox7.Text = generatecode();
+                    btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+                }
+
+                setup();
+                textBox10.Text = "Balanced all: " + totalMoved + " moved, " + totalAbsorbed + " absorbed, " +
+                    totalBrightMoved + " bright moved, " + totalBrightAbsorbed + " bright absorbed.";
                 return;
             }
 
+            BalanceResult result = PerformBalanceLine(threshold, targetLine, ignoreBrightness, true);
+
+            if ((result.Moved > 0) || (result.Absorbed > 0) || (result.BrightMoved > 0) || (result.BrightAbsorbed > 0))
+            {
+                lastcomputedmarks = false;
+                ClearMismatchPreview();
+                textBox7.Text = generatecode();
+                btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+            }
+
+            setup(); // refresh the screen
+            textBox10.Text = result.Message;
+        }
+
+        private BalanceResult PerformBalanceLine(int threshold, int targetLine, bool ignoreBrightness, bool showMessages)
+        {
+            BalanceResult result = new BalanceResult();
+
+            if ((targetLine < 1) || (targetLine > 191))
+            {
+                result.Message = "Balance needs a raster line between 1 and 191.";
+                if (showMessages) MessageBox.Show(result.Message, "Balance", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return result;
+            }
+            if (IsUnlimitedBalanceRaster(targetLine))
+            {
+                result.Message = "Balance skipped: raster " + targetLine + " has no write limit.";
+                return result;
+            }
+
             int previousLine = targetLine - 1;
-            int moved = 0;
-            int absorbed = 0;
-            bool ignoreBrightness = ignoreBright != 0;
             bool previousLineUnlimited = IsUnlimitedBalanceRaster(previousLine);
             int targetLimit = previousLineUnlimited ? 0 : threshold;
             int previousWrites = CountRasterWrites(previousLine);
@@ -6874,7 +6929,7 @@ TIPS
 
                     chex[x, targetLine] = 0;
                     targetWrites--;
-                    moved++;
+                    result.Moved++;
                 }
             }
 
@@ -6892,25 +6947,57 @@ TIPS
                     chex[x, targetLine] = 0;
                     UpdateBalanceWriteMarker(x, targetLine + 1);
                     targetWrites--;
-                    absorbed++;
+                    result.Absorbed++;
                 }
             }
 
-            if ((moved > 0) || (absorbed > 0))
+            if (ignoreBrightness)
             {
-                lastcomputedmarks = false;
-                ClearMismatchPreview();
-                textBox7.Text = generatecode();
-                btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+                for (int x = 0; x < 32; x++)
+                {
+                    if (targetWrites <= targetLimit) break;
+                    if (chex[x, targetLine] == 0) continue;
+
+                    bool canMoveUp = previousLineUnlimited || (chex[x, previousLine] != 0) || (previousWrites < threshold);
+                    if (canMoveUp && TryCopyTwoColorAttributeIgnoringBrightness(x, previousLine, targetLine))
+                    {
+                        if (chex[x, previousLine] == 0)
+                        {
+                            chex[x, previousLine] = 1;
+                            previousWrites++;
+                        }
+
+                        chex[x, targetLine] = 0;
+                        targetWrites--;
+                        result.BrightMoved++;
+                        continue;
+                    }
+
+                    if (!canMoveUp && !WouldAbsorbOverflowNextRaster(x, targetLine, threshold) &&
+                        TryCopyTwoColorAttributeIgnoringBrightness(x, targetLine, previousLine))
+                    {
+                        chex[x, targetLine] = 0;
+                        UpdateBalanceWriteMarker(x, targetLine + 1);
+                        targetWrites--;
+                        result.BrightAbsorbed++;
+                    }
+                }
             }
 
             calcgroups(previousLine);
             calcgroups(targetLine);
+            result.Message = "Balanced: " + result.Moved + " moved, " + result.Absorbed + " absorbed, " +
+                result.BrightMoved + " bright moved, " + result.BrightAbsorbed + " bright absorbed.";
+            return result;
+        }
 
-            // end of balancing operation
-
-            setup(); // refresh the screen
-            textBox10.Text = "Balanced: " + moved + " moved, " + absorbed + " absorbed.";
+        private struct BalanceResult
+        {
+            public int Moved;
+            public int Absorbed;
+            public int BrightMoved;
+            public int BrightAbsorbed;
+            public string Message;
         }
 
         private bool IsUnlimitedBalanceRaster(int rasterLine)
@@ -6978,13 +7065,33 @@ TIPS
         {
             if ((cellX < 0) || (cellX > 31) || (rasterLine < 0) || (rasterLine > 191)) return;
 
-            if ((rasterLine % 8) == 0)
-            {
-                chex[cellX, rasterLine] = 0;
-                return;
-            }
-
             chex[cellX, rasterLine] = mlt[cellX, rasterLine] == mlt[cellX, rasterLine - 1] ? 0 : 1;
+        }
+
+        private bool TryCopyTwoColorAttributeIgnoringBrightness(int cellX, int destinationLine, int sourceLine)
+        {
+            if ((cellX < 0) || (cellX > 31) || (destinationLine < 0) || (destinationLine > 191) ||
+                (sourceLine < 0) || (sourceLine > 191)) return false;
+
+            if ((bmp[cellX, destinationLine] == 0) || (bmp[cellX, destinationLine] == 255)) return false;
+            if ((bmp[cellX, sourceLine] == 0) || (bmp[cellX, sourceLine] == 255)) return false;
+
+            int[] destinationColors = getattr((byte)mlt[cellX, destinationLine]);
+            int[] sourceColors = getattr((byte)mlt[cellX, sourceLine]);
+
+            bool sameOrder =
+                BalanceColorMatches(destinationColors[0], sourceColors[0], true) &&
+                BalanceColorMatches(destinationColors[1], sourceColors[1], true);
+            bool swappedOrder =
+                BalanceColorMatches(destinationColors[0], sourceColors[1], true) &&
+                BalanceColorMatches(destinationColors[1], sourceColors[0], true);
+
+            if (!sameOrder && !swappedOrder) return false;
+
+            mlt[cellX, destinationLine] = mlt[cellX, sourceLine];
+            if (swappedOrder) bmp[cellX, destinationLine] ^= 255;
+
+            return true;
         }
 
         private bool TryCopyPreviousRasterColorToSingleColorTarget(int cellX, int targetLine, bool ignoreBrightness)
