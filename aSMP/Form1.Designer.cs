@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("");
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("");
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("");
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.textBox8 = new System.Windows.Forms.TextBox();
@@ -67,6 +67,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.radioButton10 = new System.Windows.Forms.RadioButton();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.button21 = new System.Windows.Forms.Button();
             this.button17 = new System.Windows.Forms.Button();
             this.button16 = new System.Windows.Forms.Button();
             this.button15 = new System.Windows.Forms.Button();
@@ -128,6 +129,8 @@
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.button22 = new System.Windows.Forms.Button();
+            this.textBox15 = new System.Windows.Forms.TextBox();
             this.comboBox4 = new System.Windows.Forms.ComboBox();
             this.label6 = new System.Windows.Forms.Label();
             this.textBox6 = new System.Windows.Forms.TextBox();
@@ -188,11 +191,6 @@
             this.chkMltBri = new System.Windows.Forms.CheckBox();
             this.chkMltLevel = new System.Windows.Forms.CheckBox();
             this.chkMltFlip = new System.Windows.Forms.CheckBox();
-            this.rangeSliderNet45 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet44 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet43 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet42 = new aSMP.RangeSliderNet4();
-            this.rangeSliderNet41 = new aSMP.RangeSliderNet4();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
             this.label3 = new System.Windows.Forms.Label();
             this.textBox3 = new System.Windows.Forms.TextBox();
@@ -246,6 +244,11 @@
             this.textZX7 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.txtZX0 = new System.Windows.Forms.TextBox();
+            this.rangeSliderNet45 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet44 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet43 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet42 = new aSMP.RangeSliderNet4();
+            this.rangeSliderNet41 = new aSMP.RangeSliderNet4();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
             this.tabControl1.SuspendLayout();
@@ -418,7 +421,6 @@
             // 
             // tabFix
             // 
-            this.tabFix.Controls.Add(this.groupBox5);
             this.tabFix.Controls.Add(this.groupBox1);
             this.tabFix.Location = new System.Drawing.Point(4, 40);
             this.tabFix.Name = "tabFix";
@@ -438,19 +440,19 @@
             this.groupBox5.Controls.Add(this.txtLastPickedRaster);
             this.groupBox5.Controls.Add(this.txtBalance);
             this.groupBox5.Controls.Add(this.btnLoadBalance);
-            this.groupBox5.Location = new System.Drawing.Point(12, 157);
+            this.groupBox5.Location = new System.Drawing.Point(11, 270);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(257, 211);
+            this.groupBox5.Size = new System.Drawing.Size(257, 132);
             this.groupBox5.TabIndex = 37;
             this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Balance";
+            this.groupBox5.Text = "Auto Balance";
             // 
             // chkSimilarColor
             // 
             this.chkSimilarColor.AutoSize = true;
             this.chkSimilarColor.Checked = true;
             this.chkSimilarColor.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkSimilarColor.Location = new System.Drawing.Point(76, 120);
+            this.chkSimilarColor.Location = new System.Drawing.Point(8, 88);
             this.chkSimilarColor.Name = "chkSimilarColor";
             this.chkSimilarColor.Size = new System.Drawing.Size(118, 17);
             this.chkSimilarColor.TabIndex = 43;
@@ -471,7 +473,7 @@
             this.chkIgnorePixel.AutoSize = true;
             this.chkIgnorePixel.Checked = true;
             this.chkIgnorePixel.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkIgnorePixel.Location = new System.Drawing.Point(76, 74);
+            this.chkIgnorePixel.Location = new System.Drawing.Point(8, 67);
             this.chkIgnorePixel.Name = "chkIgnorePixel";
             this.chkIgnorePixel.Size = new System.Drawing.Size(134, 17);
             this.chkIgnorePixel.TabIndex = 41;
@@ -483,7 +485,7 @@
             this.chkIgnoreBright.AutoSize = true;
             this.chkIgnoreBright.Checked = true;
             this.chkIgnoreBright.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkIgnoreBright.Location = new System.Drawing.Point(76, 97);
+            this.chkIgnoreBright.Location = new System.Drawing.Point(8, 109);
             this.chkIgnoreBright.Name = "chkIgnoreBright";
             this.chkIgnoreBright.Size = new System.Drawing.Size(105, 17);
             this.chkIgnoreBright.TabIndex = 40;
@@ -504,11 +506,11 @@
             this.chkBalanceAll.AutoSize = true;
             this.chkBalanceAll.Checked = true;
             this.chkBalanceAll.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkBalanceAll.Location = new System.Drawing.Point(76, 152);
+            this.chkBalanceAll.Location = new System.Drawing.Point(148, 65);
             this.chkBalanceAll.Name = "chkBalanceAll";
-            this.chkBalanceAll.Size = new System.Drawing.Size(131, 17);
+            this.chkBalanceAll.Size = new System.Drawing.Size(78, 17);
             this.chkBalanceAll.TabIndex = 38;
-            this.chkBalanceAll.Text = "Balance whole screen";
+            this.chkBalanceAll.Text = "Balance all";
             this.chkBalanceAll.UseVisualStyleBackColor = true;
             // 
             // txtLastPickedRaster
@@ -527,13 +529,14 @@
             this.txtBalance.Name = "txtBalance";
             this.txtBalance.Size = new System.Drawing.Size(27, 20);
             this.txtBalance.TabIndex = 36;
-            this.txtBalance.Text = "11";
+            this.txtBalance.Text = "10";
             // 
             // btnLoadBalance
             // 
-            this.btnLoadBalance.Location = new System.Drawing.Point(134, 175);
+            this.btnLoadBalance.Enabled = false;
+            this.btnLoadBalance.Location = new System.Drawing.Point(148, 99);
             this.btnLoadBalance.Name = "btnLoadBalance";
-            this.btnLoadBalance.Size = new System.Drawing.Size(114, 23);
+            this.btnLoadBalance.Size = new System.Drawing.Size(103, 23);
             this.btnLoadBalance.TabIndex = 30;
             this.btnLoadBalance.Text = "Balance";
             this.btnLoadBalance.UseVisualStyleBackColor = true;
@@ -617,6 +620,7 @@
             // 
             // tabPage3
             // 
+            this.tabPage3.Controls.Add(this.groupBox5);
             this.tabPage3.Controls.Add(this.chkNotToggle);
             this.tabPage3.Controls.Add(this.groupBox4);
             this.tabPage3.Controls.Add(this.radioButton10);
@@ -657,9 +661,9 @@
             // 
             this.groupBox4.Controls.Add(this.textBox13);
             this.groupBox4.Controls.Add(this.label5);
-            this.groupBox4.Location = new System.Drawing.Point(208, 126);
+            this.groupBox4.Location = new System.Drawing.Point(182, 113);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(258, 138);
+            this.groupBox4.Size = new System.Drawing.Size(86, 138);
             this.groupBox4.TabIndex = 35;
             this.groupBox4.TabStop = false;
             this.groupBox4.Visible = false;
@@ -668,10 +672,10 @@
             // 
             this.textBox13.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textBox13.Enabled = false;
-            this.textBox13.Location = new System.Drawing.Point(9, 31);
+            this.textBox13.Location = new System.Drawing.Point(9, 11);
             this.textBox13.Multiline = true;
             this.textBox13.Name = "textBox13";
-            this.textBox13.Size = new System.Drawing.Size(224, 80);
+            this.textBox13.Size = new System.Drawing.Size(68, 113);
             this.textBox13.TabIndex = 0;
             this.textBox13.Text = "Left click, right click, middle click\r\n\r\nPress and hold shift  to check swap temp" +
     "orarily";
@@ -699,22 +703,33 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.button21);
             this.groupBox3.Controls.Add(this.button17);
             this.groupBox3.Controls.Add(this.button16);
             this.groupBox3.Controls.Add(this.button15);
             this.groupBox3.Controls.Add(this.button5);
             this.groupBox3.Location = new System.Drawing.Point(10, 408);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(127, 106);
+            this.groupBox3.Size = new System.Drawing.Size(258, 106);
             this.groupBox3.TabIndex = 33;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Quick Operations";
+            // 
+            // button21
+            // 
+            this.button21.Location = new System.Drawing.Point(139, 48);
+            this.button21.Name = "button21";
+            this.button21.Size = new System.Drawing.Size(110, 23);
+            this.button21.TabIndex = 36;
+            this.button21.Text = "Toggle Mismatches";
+            this.button21.UseVisualStyleBackColor = true;
+            this.button21.Click += new System.EventHandler(this.button21_Click_1);
             // 
             // button17
             // 
             this.button17.Location = new System.Drawing.Point(77, 48);
             this.button17.Name = "button17";
-            this.button17.Size = new System.Drawing.Size(47, 23);
+            this.button17.Size = new System.Drawing.Size(56, 23);
             this.button17.TabIndex = 35;
             this.button17.Text = "Revert";
             this.button17.UseVisualStyleBackColor = true;
@@ -724,7 +739,7 @@
             // 
             this.button16.Location = new System.Drawing.Point(9, 77);
             this.button16.Name = "button16";
-            this.button16.Size = new System.Drawing.Size(118, 23);
+            this.button16.Size = new System.Drawing.Size(124, 23);
             this.button16.TabIndex = 34;
             this.button16.Text = "3. Save";
             this.button16.UseVisualStyleBackColor = true;
@@ -744,7 +759,7 @@
             // 
             this.button5.Location = new System.Drawing.Point(9, 19);
             this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(115, 23);
+            this.button5.Size = new System.Drawing.Size(124, 23);
             this.button5.TabIndex = 32;
             this.button5.Text = "1. Regenerate";
             this.button5.UseVisualStyleBackColor = true;
@@ -987,7 +1002,7 @@
             // button25
             // 
             this.button25.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button25.Location = new System.Drawing.Point(5, 457);
+            this.button25.Location = new System.Drawing.Point(5, 727);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(112, 23);
             this.button25.TabIndex = 15;
@@ -1011,7 +1026,7 @@
             // button6
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.Location = new System.Drawing.Point(182, 457);
+            this.button6.Location = new System.Drawing.Point(182, 727);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(93, 23);
             this.button6.TabIndex = 2;
@@ -1121,7 +1136,7 @@
             // button11
             // 
             this.button11.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button11.Location = new System.Drawing.Point(123, 457);
+            this.button11.Location = new System.Drawing.Point(123, 727);
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(53, 23);
             this.button11.TabIndex = 14;
@@ -1151,7 +1166,7 @@
             this.textBox7.Multiline = true;
             this.textBox7.Name = "textBox7";
             this.textBox7.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox7.Size = new System.Drawing.Size(268, 308);
+            this.textBox7.Size = new System.Drawing.Size(268, 578);
             this.textBox7.TabIndex = 12;
             this.textBox7.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textBox7_MouseClick);
             // 
@@ -1381,7 +1396,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(3, 302);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(188, 251);
+            this.listBox1.Size = new System.Drawing.Size(188, 446);
             this.listBox1.TabIndex = 16;
             this.listBox1.Visible = false;
             // 
@@ -1406,6 +1421,8 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.button22);
+            this.tabPage1.Controls.Add(this.textBox15);
             this.tabPage1.Controls.Add(this.comboBox4);
             this.tabPage1.Controls.Add(this.label6);
             this.tabPage1.Controls.Add(this.textBox6);
@@ -1418,6 +1435,27 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Raster Info";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // button22
+            // 
+            this.button22.Location = new System.Drawing.Point(6, 176);
+            this.button22.Name = "button22";
+            this.button22.Size = new System.Drawing.Size(39, 23);
+            this.button22.TabIndex = 14;
+            this.button22.Text = "Pick";
+            this.button22.UseVisualStyleBackColor = true;
+            this.button22.Click += new System.EventHandler(this.button22_Click_1);
+            // 
+            // textBox15
+            // 
+            this.textBox15.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBox15.Location = new System.Drawing.Point(51, 358);
+            this.textBox15.Multiline = true;
+            this.textBox15.Name = "textBox15";
+            this.textBox15.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.textBox15.Size = new System.Drawing.Size(227, 164);
+            this.textBox15.TabIndex = 13;
             // 
             // comboBox4
             // 
@@ -1457,7 +1495,7 @@
             this.textBox4.Multiline = true;
             this.textBox4.Name = "textBox4";
             this.textBox4.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox4.Size = new System.Drawing.Size(224, 233);
+            this.textBox4.Size = new System.Drawing.Size(224, 176);
             this.textBox4.TabIndex = 6;
             // 
             // label4
@@ -2047,81 +2085,6 @@
             this.chkMltFlip.UseVisualStyleBackColor = true;
             this.chkMltFlip.CheckedChanged += new System.EventHandler(this.chkMltFlip_CheckedChanged);
             // 
-            // rangeSliderNet45
-            // 
-            this.rangeSliderNet45.Location = new System.Drawing.Point(67, 13);
-            this.rangeSliderNet45.LowerValue = 80;
-            this.rangeSliderNet45.MaxValue = 255;
-            this.rangeSliderNet45.MinValue = 0;
-            this.rangeSliderNet45.Name = "rangeSliderNet45";
-            this.rangeSliderNet45.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet45.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet45.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet45.TabIndex = 9;
-            this.rangeSliderNet45.Text = "ALL";
-            this.rangeSliderNet45.UpperValue = 160;
-            this.rangeSliderNet45.RangeChanged += new System.EventHandler(this.rangeSliderNet45_RangeChanged);
-            // 
-            // rangeSliderNet44
-            // 
-            this.rangeSliderNet44.Location = new System.Drawing.Point(228, 13);
-            this.rangeSliderNet44.LowerValue = 80;
-            this.rangeSliderNet44.MaxValue = 255;
-            this.rangeSliderNet44.MinValue = 0;
-            this.rangeSliderNet44.Name = "rangeSliderNet44";
-            this.rangeSliderNet44.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet44.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet44.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet44.TabIndex = 3;
-            this.rangeSliderNet44.Text = "rangeSliderNet44";
-            this.rangeSliderNet44.UpperValue = 255;
-            this.rangeSliderNet44.RangeChanged += new System.EventHandler(this.rangeSliderNet44_RangeChanged);
-            // 
-            // rangeSliderNet43
-            // 
-            this.rangeSliderNet43.Location = new System.Drawing.Point(191, 13);
-            this.rangeSliderNet43.LowerValue = 80;
-            this.rangeSliderNet43.MaxValue = 255;
-            this.rangeSliderNet43.MinValue = 0;
-            this.rangeSliderNet43.Name = "rangeSliderNet43";
-            this.rangeSliderNet43.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet43.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet43.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet43.TabIndex = 2;
-            this.rangeSliderNet43.Text = "rangeSliderNet43";
-            this.rangeSliderNet43.UpperValue = 160;
-            this.rangeSliderNet43.RangeChanged += new System.EventHandler(this.rangeSliderNet43_RangeChanged);
-            // 
-            // rangeSliderNet42
-            // 
-            this.rangeSliderNet42.Location = new System.Drawing.Point(154, 13);
-            this.rangeSliderNet42.LowerValue = 80;
-            this.rangeSliderNet42.MaxValue = 255;
-            this.rangeSliderNet42.MinValue = 0;
-            this.rangeSliderNet42.Name = "rangeSliderNet42";
-            this.rangeSliderNet42.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet42.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet42.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet42.TabIndex = 1;
-            this.rangeSliderNet42.Text = "rangeSliderNet42";
-            this.rangeSliderNet42.UpperValue = 160;
-            this.rangeSliderNet42.RangeChanged += new System.EventHandler(this.rangeSliderNet42_RangeChanged);
-            // 
-            // rangeSliderNet41
-            // 
-            this.rangeSliderNet41.Location = new System.Drawing.Point(117, 13);
-            this.rangeSliderNet41.LowerValue = 80;
-            this.rangeSliderNet41.MaxValue = 255;
-            this.rangeSliderNet41.MinValue = 0;
-            this.rangeSliderNet41.Name = "rangeSliderNet41";
-            this.rangeSliderNet41.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
-            this.rangeSliderNet41.Size = new System.Drawing.Size(31, 377);
-            this.rangeSliderNet41.SliderColor = System.Drawing.Color.LightBlue;
-            this.rangeSliderNet41.TabIndex = 0;
-            this.rangeSliderNet41.Text = "rangeSliderNet41";
-            this.rangeSliderNet41.UpperValue = 160;
-            this.rangeSliderNet41.RangeChanged += new System.EventHandler(this.rangeSliderNet41_RangeChanged);
-            // 
             // pictureBox3
             // 
             this.pictureBox3.Location = new System.Drawing.Point(13, 85);
@@ -2191,8 +2154,8 @@
             this.listView1.FullRowSelect = true;
             this.listView1.HideSelection = false;
             this.listView1.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem3,
-            listViewItem4});
+            listViewItem1,
+            listViewItem2});
             this.listView1.Location = new System.Drawing.Point(369, 424);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(261, 174);
@@ -2528,6 +2491,81 @@
             this.txtZX0.Text = resources.GetString("txtZX0.Text");
             this.txtZX0.Visible = false;
             // 
+            // rangeSliderNet45
+            // 
+            this.rangeSliderNet45.Location = new System.Drawing.Point(67, 13);
+            this.rangeSliderNet45.LowerValue = 80;
+            this.rangeSliderNet45.MaxValue = 255;
+            this.rangeSliderNet45.MinValue = 0;
+            this.rangeSliderNet45.Name = "rangeSliderNet45";
+            this.rangeSliderNet45.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet45.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet45.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet45.TabIndex = 9;
+            this.rangeSliderNet45.Text = "ALL";
+            this.rangeSliderNet45.UpperValue = 160;
+            this.rangeSliderNet45.RangeChanged += new System.EventHandler(this.rangeSliderNet45_RangeChanged);
+            // 
+            // rangeSliderNet44
+            // 
+            this.rangeSliderNet44.Location = new System.Drawing.Point(228, 13);
+            this.rangeSliderNet44.LowerValue = 80;
+            this.rangeSliderNet44.MaxValue = 255;
+            this.rangeSliderNet44.MinValue = 0;
+            this.rangeSliderNet44.Name = "rangeSliderNet44";
+            this.rangeSliderNet44.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet44.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet44.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet44.TabIndex = 3;
+            this.rangeSliderNet44.Text = "rangeSliderNet44";
+            this.rangeSliderNet44.UpperValue = 255;
+            this.rangeSliderNet44.RangeChanged += new System.EventHandler(this.rangeSliderNet44_RangeChanged);
+            // 
+            // rangeSliderNet43
+            // 
+            this.rangeSliderNet43.Location = new System.Drawing.Point(191, 13);
+            this.rangeSliderNet43.LowerValue = 80;
+            this.rangeSliderNet43.MaxValue = 255;
+            this.rangeSliderNet43.MinValue = 0;
+            this.rangeSliderNet43.Name = "rangeSliderNet43";
+            this.rangeSliderNet43.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet43.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet43.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet43.TabIndex = 2;
+            this.rangeSliderNet43.Text = "rangeSliderNet43";
+            this.rangeSliderNet43.UpperValue = 160;
+            this.rangeSliderNet43.RangeChanged += new System.EventHandler(this.rangeSliderNet43_RangeChanged);
+            // 
+            // rangeSliderNet42
+            // 
+            this.rangeSliderNet42.Location = new System.Drawing.Point(154, 13);
+            this.rangeSliderNet42.LowerValue = 80;
+            this.rangeSliderNet42.MaxValue = 255;
+            this.rangeSliderNet42.MinValue = 0;
+            this.rangeSliderNet42.Name = "rangeSliderNet42";
+            this.rangeSliderNet42.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet42.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet42.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet42.TabIndex = 1;
+            this.rangeSliderNet42.Text = "rangeSliderNet42";
+            this.rangeSliderNet42.UpperValue = 160;
+            this.rangeSliderNet42.RangeChanged += new System.EventHandler(this.rangeSliderNet42_RangeChanged);
+            // 
+            // rangeSliderNet41
+            // 
+            this.rangeSliderNet41.Location = new System.Drawing.Point(117, 13);
+            this.rangeSliderNet41.LowerValue = 80;
+            this.rangeSliderNet41.MaxValue = 255;
+            this.rangeSliderNet41.MinValue = 0;
+            this.rangeSliderNet41.Name = "rangeSliderNet41";
+            this.rangeSliderNet41.Orientation = aSMP.RangeSliderNet4.SliderOrientation.Vertical;
+            this.rangeSliderNet41.Size = new System.Drawing.Size(31, 377);
+            this.rangeSliderNet41.SliderColor = System.Drawing.Color.LightBlue;
+            this.rangeSliderNet41.TabIndex = 0;
+            this.rangeSliderNet41.Text = "rangeSliderNet41";
+            this.rangeSliderNet41.UpperValue = 160;
+            this.rangeSliderNet41.RangeChanged += new System.EventHandler(this.rangeSliderNet41_RangeChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -2807,6 +2845,9 @@
         private System.Windows.Forms.Button button20;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem6;
         private System.Windows.Forms.ToolStripMenuItem importToConversionBufferToolStripMenuItem;
+        private System.Windows.Forms.Button button21;
+        private System.Windows.Forms.TextBox textBox15;
+        private System.Windows.Forms.Button button22;
     }
 }
 

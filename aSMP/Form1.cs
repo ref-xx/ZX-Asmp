@@ -125,13 +125,27 @@ namespace aSMP
         int[] ram = new int[65535]; // emulated ram
         int emuCurrentRaster=0; //verbose emulating raster
         int codeLineIndex = 0; //when emulating, last processed line in code text file
+        int currentTraceLineIndex = -1;
+        string currentTraceOpcode = "";
+        List<AttrWriteTrace>[] attrWriteTrace = new List<AttrWriteTrace>[768];
+        CellReadTrace[,] cellReadTrace = new CellReadTrace[32, 192];
 
         bool lastcomputedmarks = false;
+        bool mismatchPreviewValid = false;
+        bool mismatchMarksVisible = true;
+        List<Point> mismatchCells = new List<Point>();
+        bool[,] mismatchMap = new bool[32, 192];
         bool noProcess=false;
 
 
         bool optDraggingNow = false;
         bool isHeldDown = false;
+        bool[,] brightnessToggledInStroke = new bool[32, 192];
+        List<Point> brightnessStrokeDirty = new List<Point>();
+        int brightnessStrokeLastX = -1;
+        int brightnessStrokeLastY = -1;
+        bool rasterInfoPickArmed = false;
+        bool rasterInfoPicked = false;
 
 
         // recent files management
@@ -168,6 +182,25 @@ namespace aSMP
 
         }
 
+        struct AttrWriteTrace
+        {
+            public int Cycle;
+            public int Address;
+            public int Value;
+            public int LineIndex;
+            public string Opcode;
+        }
+
+        struct CellReadTrace
+        {
+            public bool Valid;
+            public int Cycle;
+            public int Address;
+            public int Value;
+            public bool HasLastWrite;
+            public AttrWriteTrace LastWrite;
+        }
+
         //will be used temporarily
         int[] rq = new int[17]; //register load queue
         int[] spq = new int[17]; //stack pointer queue
@@ -199,12 +232,21 @@ namespace aSMP
                 cols = emlt[x, y];
                 if (checkMARK.Checked)
                 {
-                    if (mlt[x, y] != emlt[x, y])
+                    bool mismatch = emulationactive ? (mlt[x, y] != emlt[x, y]) : mismatchMap[x, y];
+                    if (mismatch)
                     {
-                        rx[0] = 16;
-                        rx[1] = 16;
-                        rx[2] = 0;
-                        if (checkSTOP.Checked) emulationactive = false;
+                        if (mismatchMarksVisible)
+                        {
+                            rx[0] = 16;
+                            rx[1] = 16;
+                            rx[2] = 0;
+                            if (checkSTOP.Checked) emulationactive = false;
+                        }
+                        else
+                        {
+                            rx = getattr((byte)mlt[x, y]);
+                            cols = mlt[x, y];
+                        }
 
                     }
 
@@ -790,26 +832,257 @@ namespace aSMP
         {
             if (!emulationactive) return; //no need to execute if we are not emulating!
 
+            bool liveDraw = checkVERBOSE.Checked;
             for (int k = reg.cycle; k < Ts; k++)
             {
                 int c = contention(k);
                 if ((c == 3) || (c == 1))
                 {
                     //read cycle
-                    int data = ram[cycletoaddress(k)];
+                    int address = cycletoaddress(k);
+                    int data = ram[address];
                     int y = (k - contst) / modelts;
                     int x = ((k - (contst + (y * modelts))) / 4);
                     emlt[x, y] = data;
-                    Graphics G = Graphics.FromImage(buffy);
+                    RecordUlaRead(x, y, address, data, k);
                     cycle = Ts;
-                    setcell(G, x, y);
-                    pictureBox1.Image = buffy;
-                    G.Dispose();
+                    if (liveDraw)
+                    {
+                        Graphics G = Graphics.FromImage(buffy);
+                        setcell(G, x, y);
+                        pictureBox1.Image = buffy;
+                        G.Dispose();
+                    }
                 }
 
             }
 
             if (checkVERBOSE.Checked) textBox8.Text = Ts.ToString();
+        }
+
+        private void EnsureTraceLists()
+        {
+            for (int i = 0; i < attrWriteTrace.Length; i++)
+            {
+                if (attrWriteTrace[i] == null) attrWriteTrace[i] = new List<AttrWriteTrace>();
+            }
+        }
+
+        private void ResetEmulationTrace()
+        {
+            EnsureTraceLists();
+            for (int i = 0; i < attrWriteTrace.Length; i++) attrWriteTrace[i].Clear();
+            Array.Clear(cellReadTrace, 0, cellReadTrace.Length);
+            currentTraceLineIndex = -1;
+            currentTraceOpcode = "";
+            textBox15.Text = "";
+        }
+
+        private int AttrTraceIndex(int address)
+        {
+            if ((address < 22528) || (address >= 22528 + 768)) return -1;
+            return address - 22528;
+        }
+
+        private void RecordAttrWrite(int address, int value, int writeCycle)
+        {
+            int index = AttrTraceIndex(address);
+            if (index < 0) return;
+
+            EnsureTraceLists();
+            AttrWriteTrace trace = new AttrWriteTrace();
+            trace.Cycle = writeCycle;
+            trace.Address = address;
+            trace.Value = value & 255;
+            trace.LineIndex = currentTraceLineIndex;
+            trace.Opcode = currentTraceOpcode;
+            attrWriteTrace[index].Add(trace);
+        }
+
+        private void RecordUlaRead(int x, int y, int address, int value, int readCycle)
+        {
+            if ((x < 0) || (x > 31) || (y < 0) || (y > 191)) return;
+
+            CellReadTrace trace = new CellReadTrace();
+            trace.Valid = true;
+            trace.Cycle = readCycle;
+            trace.Address = address;
+            trace.Value = value & 255;
+
+            int index = AttrTraceIndex(address);
+            if ((index >= 0) && (attrWriteTrace[index] != null) && (attrWriteTrace[index].Count > 0))
+            {
+                trace.HasLastWrite = true;
+                trace.LastWrite = attrWriteTrace[index][attrWriteTrace[index].Count - 1];
+            }
+
+            cellReadTrace[x, y] = trace;
+        }
+
+        private string FormatTraceWrite(AttrWriteTrace write, int readCycle, int expected)
+        {
+            string timing = write.Cycle <= readCycle ? "before ULA" : "after ULA";
+            string valueNote = write.Value == expected ? "expected" : "other";
+            return "ts " + write.Cycle +
+                   " [" + timing + "] value #" + dectohex(write.Value) +
+                   " (" + valueNote + "), line " + write.LineIndex +
+                   ": " + write.Opcode.Trim();
+        }
+
+        private void UpdateMismatchInfo(int x, int y)
+        {
+            if (textBox15 == null) return;
+
+            int expected = mlt[x, y] & 255;
+            int actual = emlt[x, y] & 255;
+            int address = mltcoordtoaddress(x, y);
+            int index = AttrTraceIndex(address);
+            CellReadTrace read = cellReadTrace[x, y];
+
+            StringBuilder report = new StringBuilder();
+            report.AppendLine("Cell: " + x + "," + y + "  Attr: #" + dectohex4(address));
+            report.AppendLine("Expected MLT: #" + dectohex(expected) + " (" + expected + ")");
+
+            if (!lastcomputedmarks && !read.Valid)
+            {
+                report.AppendLine("No test trace. Run Test with generated code first.");
+                textBox15.Text = report.ToString();
+                return;
+            }
+
+            report.AppendLine("Preview value: #" + dectohex(actual) + " (" + actual + ")");
+            report.AppendLine(actual == expected ? "Status: OK" : "Status: MISMATCH");
+
+            if (read.Valid)
+            {
+                report.AppendLine("ULA read: ts " + read.Cycle + ", value #" + dectohex(read.Value));
+                if (read.HasLastWrite)
+                {
+                    report.AppendLine("Value source:");
+                    report.AppendLine(FormatTraceWrite(read.LastWrite, read.Cycle, expected));
+                }
+                else
+                {
+                    report.AppendLine("Value source: no write before ULA read; initial/default attribute was visible.");
+                }
+            }
+            else
+            {
+                report.AppendLine("ULA read: not recorded for this cell.");
+            }
+
+            List<AttrWriteTrace> writes = (index >= 0 && attrWriteTrace[index] != null) ? attrWriteTrace[index] : null;
+            AttrWriteTrace firstExpectedAfterRead = new AttrWriteTrace();
+            bool hasExpectedAfterRead = false;
+
+            if (writes != null && read.Valid)
+            {
+                foreach (AttrWriteTrace write in writes)
+                {
+                    if ((write.Cycle > read.Cycle) && (write.Value == expected))
+                    {
+                        firstExpectedAfterRead = write;
+                        hasExpectedAfterRead = true;
+                        break;
+                    }
+                }
+            }
+
+            if (actual != expected)
+            {
+                report.AppendLine("");
+                report.AppendLine("Likely cause:");
+                if (hasExpectedAfterRead)
+                {
+                    report.AppendLine("Timing miss: expected value was written after ULA had already read this cell.");
+                    report.AppendLine("Late expected write:");
+                    report.AppendLine(FormatTraceWrite(firstExpectedAfterRead, read.Cycle, expected));
+                }
+                else if (read.Valid && read.HasLastWrite && read.LastWrite.Value != expected)
+                {
+                    report.AppendLine("Wrong write data: the opcode active before ULA wrote a different value.");
+                    report.AppendLine("Check register/data loading before this write.");
+                }
+                else if (read.Valid && !read.HasLastWrite)
+                {
+                    report.AppendLine("Missing/late write: no generated write reached this attribute before ULA.");
+                }
+                else
+                {
+                    report.AppendLine("Unknown from trace. Check full write list below.");
+                }
+            }
+
+            report.AppendLine("");
+            report.AppendLine("Writes to this 8x8 attribute cell:");
+            if (writes == null || writes.Count == 0)
+            {
+                report.AppendLine("(none recorded)");
+            }
+            else
+            {
+                foreach (AttrWriteTrace write in writes)
+                {
+                    report.AppendLine(FormatTraceWrite(write, read.Valid ? read.Cycle : Int32.MaxValue, expected));
+                }
+            }
+
+            textBox15.Text = report.ToString();
+        }
+
+        private bool IsRasterInfoTabActive()
+        {
+            return tabControl1.SelectedTab == tabPage1;
+        }
+
+        private bool IsRasterInfoFrozen()
+        {
+            return IsRasterInfoTabActive() && rasterInfoPicked;
+        }
+
+        private void SetRasterInfoPickArmed(bool armed)
+        {
+            rasterInfoPickArmed = armed && IsRasterInfoTabActive();
+            if (rasterInfoPickArmed)
+            {
+                rasterInfoPicked = false;
+                button22.Text = "Pick...";
+                button22.UseVisualStyleBackColor = false;
+                button22.BackColor = Color.Gold;
+            }
+            else
+            {
+                button22.Text = "Pick";
+                button22.BackColor = SystemColors.Control;
+                button22.UseVisualStyleBackColor = true;
+            }
+        }
+
+        private void CancelRasterInfoPick()
+        {
+            rasterInfoPickArmed = false;
+            rasterInfoPicked = false;
+            SetRasterInfoPickArmed(false);
+        }
+
+        private void PickRasterInfoCell(int mouseX, int mouseY)
+        {
+            if (!IsRasterInfoTabActive()) return;
+
+            int pickX = mouseX / cw;
+            int pickY = mouseY / ch;
+            if ((pickX < 0) || (pickX > 31) || (pickY < 0) || (pickY > 191)) return;
+
+            rasterInfoPicked = false;
+            move_cursor(mouseX, mouseY, 0);
+            if (comboBox4.SelectedIndex != pickY) comboBox4.SelectedIndex = pickY;
+            UpdateMismatchInfo(pickX, pickY);
+
+            rasterInfoPickArmed = false;
+            rasterInfoPicked = true;
+            button22.Text = "Pick";
+            button22.BackColor = SystemColors.Control;
+            button22.UseVisualStyleBackColor = true;
         }
 
         private void updateregs()
@@ -845,6 +1118,7 @@ namespace aSMP
             textBox2.Text = "Cursor: " + safecycle[cx, cy].ToString() + " Start:" + safecycle[0, cy].ToString() + " Addr: " + ca.ToString() + " (#" + dectohex4(ca) + ")";
             textBox3.Text = fts[cy] + " Excess: " + fazla[cy + 1].ToString();
             if (fts[cy] < warnthreshold) { textBox3.BackColor = Color.Red; } else { textBox3.BackColor = Color.White; }
+            if (!IsRasterInfoFrozen()) UpdateMismatchInfo(cx, cy);
             Graphics G = Graphics.FromImage(buffy);
             if ((ly != cy) && (checkLINE.Checked))
             {
@@ -906,8 +1180,12 @@ namespace aSMP
 
                             if (radioToggleBri.Checked)
                             {
-                                //toggle brighness
-                                if (mlt[cx, cy] > 63) mlt[cx, cy] = mlt[cx, cy] - 64; else mlt[cx, cy] = mlt[cx, cy] + 64;
+                                ToggleBrightnessStroke(cx, cy);
+                                foreach (Point cell in brightnessStrokeDirty)
+                                {
+                                    setcell(G, cell.X, cell.Y);
+                                }
+                                brightnessStrokeDirty.Clear();
                             }
                             if (radioButton9.Checked)
                             {
@@ -1049,7 +1327,7 @@ namespace aSMP
                 drawcursor(G, x, y);
                 //textBox6.Text = info[cy];
                 //textBox4.Text = codes[cy];
-                comboBox4.SelectedIndex = cy; //cy+1 olacak
+                if (!IsRasterInfoFrozen()) comboBox4.SelectedIndex = cy; //cy+1 olacak
             }
 
             if (chkFreeRasters.Checked) freerasters(G);
@@ -1618,9 +1896,10 @@ namespace aSMP
 
             return ts;
         }
-        private void POKE(int address, int value)
+        private void POKE(int address, int value, int writeCycle = -1)
         {
             ram[address] = value;
+            RecordAttrWrite(address, value, writeCycle >= 0 ? writeCycle : reg.cycle);
             if (emulationactive && checkVERBOSE.Checked)
             {
                 int [] locxy=address_to_coord(address);
@@ -1726,7 +2005,7 @@ namespace aSMP
                     {
                         reg.sp--;
                         //ram[reg.sp] = reg.h;
-                        POKE(reg.sp, reg.h);
+                        POKE(reg.sp, reg.h, ts);
 
                         ts += 3;
                         moveula(ts);
@@ -1735,7 +2014,7 @@ namespace aSMP
                         ts += 3;
                         reg.sp--;
                         //ram[reg.sp] = reg.l;
-                        POKE(reg.sp, reg.l);
+                        POKE(reg.sp, reg.l, ts);
 
                         moveula(ts);
                     }
@@ -1743,7 +2022,7 @@ namespace aSMP
                     {
                         reg.sp--;
                         //ram[reg.sp] = reg.d;
-                        POKE(reg.sp, reg.d);
+                        POKE(reg.sp, reg.d, ts);
                         ts += 3;
                         moveula(ts);
                         ts += contention(ts); //SP2 delay
@@ -1751,7 +2030,7 @@ namespace aSMP
                         ts += 3;
                         reg.sp--;
                         //ram[reg.sp] = reg.e;
-                        POKE(reg.sp, reg.e);
+                        POKE(reg.sp, reg.e, ts);
                         
                         moveula(ts);
                     }
@@ -1759,7 +2038,7 @@ namespace aSMP
                     {
                         reg.sp--;
                         //ram[reg.sp] = reg.b;
-                        POKE(reg.sp, reg.b);
+                        POKE(reg.sp, reg.b, ts);
                         
                         ts += 3;
                         moveula(ts);
@@ -1768,7 +2047,7 @@ namespace aSMP
                         ts += 3;
                         reg.sp--;
                         //ram[reg.sp] = reg.c;
-                        POKE(reg.sp, reg.c);
+                        POKE(reg.sp, reg.c, ts);
                         
                         moveula(ts);
                     }
@@ -1785,7 +2064,7 @@ namespace aSMP
                     {
                         //LD (HL),r
                         //ram[reg.h * 256 + reg.l] = rd(s[1]);
-                        POKE(reg.h * 256 + reg.l, rd(s[1]));
+                        POKE(reg.h * 256 + reg.l, rd(s[1]), ts);
                         
                     }
                     else
@@ -1794,7 +2073,7 @@ namespace aSMP
                         moveula(ts);
                         // LD(hl),n= PC:4, PC+1=3, hl=3
                         //ram[reg.h * 256 + reg.l] = Convert.ToInt32(s[1]);
-                        POKE(reg.h * 256 + reg.l, Convert.ToInt32(s[1]));
+                        POKE(reg.h * 256 + reg.l, Convert.ToInt32(s[1]), ts);
 
                     }
                     ts += contention(ts); //apply contention write hl
@@ -2029,6 +2308,68 @@ namespace aSMP
                 }
             }
 
+        }
+
+        private void StartBrightnessStroke(int x, int y)
+        {
+            Array.Clear(brightnessToggledInStroke, 0, brightnessToggledInStroke.Length);
+            brightnessStrokeDirty.Clear();
+            brightnessStrokeLastX = x;
+            brightnessStrokeLastY = y;
+        }
+
+        private void EndBrightnessStroke()
+        {
+            brightnessStrokeLastX = -1;
+            brightnessStrokeLastY = -1;
+        }
+
+        private void ToggleBrightnessCellOnce(int x, int y)
+        {
+            if ((x < 0) || (x > 31) || (y < 0) || (y > 191)) return;
+            if (brightnessToggledInStroke[x, y]) return;
+
+            brightnessToggledInStroke[x, y] = true;
+            chex[x, y] = 1;
+            if (mlt[x, y] > 63) mlt[x, y] = mlt[x, y] - 64; else mlt[x, y] = mlt[x, y] + 64;
+            brightnessStrokeDirty.Add(new Point(x, y));
+        }
+
+        private void ToggleBrightnessStroke(int x, int y)
+        {
+            if (brightnessStrokeLastX < 0 || brightnessStrokeLastY < 0)
+            {
+                StartBrightnessStroke(x, y);
+            }
+
+            int x0 = brightnessStrokeLastX;
+            int y0 = brightnessStrokeLastY;
+            int dx = Math.Abs(x - x0);
+            int dy = Math.Abs(y - y0);
+            int sx = x0 < x ? 1 : -1;
+            int sy = y0 < y ? 1 : -1;
+            int err = dx - dy;
+
+            while (true)
+            {
+                ToggleBrightnessCellOnce(x0, y0);
+                if (x0 == x && y0 == y) break;
+
+                int e2 = 2 * err;
+                if (e2 > -dy)
+                {
+                    err -= dy;
+                    x0 += sx;
+                }
+                if (e2 < dx)
+                {
+                    err += dx;
+                    y0 += sy;
+                }
+            }
+
+            brightnessStrokeLastX = x;
+            brightnessStrokeLastY = y;
         }
 
         private void togglespare(bool spareshown)
@@ -4837,6 +5178,7 @@ namespace aSMP
             //Start Emulation
             button8.Enabled = false;
             emulationactive = false;
+            ResetEmulationTrace();
             if (checkVERBOSE.Checked) listBox2.Items.Clear();
             if (checkCLEAR.Checked)
             {
@@ -4862,6 +5204,14 @@ namespace aSMP
             //int endemul48 = 57243;
             //int endemul128 = 58033;
             //emulation ends when JP BONG is acquired by emulator.
+
+            for (int y = 0; y < 192; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    emlt[x, y] = mlt[x, y];
+                }
+            }
 
             //copy screen 
             int t = 22528;
@@ -4900,6 +5250,7 @@ namespace aSMP
                     }
                     else
                     {
+                        currentTraceLineIndex = lineIndex;
                          brake = StepSingleLine(line);
                         txtLastCodeLine.Text = lineIndex.ToString();
                         if (brake) break;
@@ -4910,16 +5261,60 @@ namespace aSMP
             emulationactive = false;
             button8.Enabled = true;
             button9.Text = "Clear Marks";
-            if (checkMARK.Checked) lastcomputedmarks = true;
+            lastcomputedmarks = true;
+            if (checkMARK.Checked)
+            {
+                BuildMismatchPreview();
+            }
+            else
+            {
+                ClearMismatchPreview();
+            }
+            if (!checkVERBOSE.Checked) setup();
             textBox14.Text = "Emulation completed.";
             
             return lineIndex;
 
         }  //START EMULATION
 
+        private void ClearMismatchPreview()
+        {
+            mismatchCells.Clear();
+            Array.Clear(mismatchMap, 0, mismatchMap.Length);
+            mismatchPreviewValid = false;
+            mismatchMarksVisible = true;
+            button21.Enabled = false;
+            button21.Text = "Toggle Mismatches";
+        }
+
+        private void BuildMismatchPreview()
+        {
+            mismatchCells.Clear();
+            Array.Clear(mismatchMap, 0, mismatchMap.Length);
+
+            for (int y = 0; y < 192; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    if (mlt[x, y] != emlt[x, y])
+                    {
+                        mismatchMap[x, y] = true;
+                        mismatchCells.Add(new Point(x, y));
+                    }
+                }
+            }
+
+            mismatchPreviewValid = mismatchCells.Count > 0;
+            mismatchMarksVisible = true;
+            button21.Enabled = checkMARK.Checked && mismatchPreviewValid && lastcomputedmarks;
+            button21.Text = mismatchPreviewValid ? "Hide Mismatches" : "Toggle Mismatches";
+        }
+
 
         private bool StepSingleLine(string line)
         {
+            currentTraceOpcode = line;
+
             if (line.Contains("jp bong"))
             {
                 emulationactive = false;
@@ -5331,11 +5726,13 @@ namespace aSMP
             }
             else
             {
-                // Existing MouseMove logic (cursor etc.)
-                /* Insert the rest of your logic here */
                 if (radioButton4.Checked || optDraggingNow)
                 {
-                    // Dragging logic...
+                    if (e.Button == MouseButtons.Left)
+                    {
+                        pictureBox1.Left += (e.X - px);
+                        pictureBox1.Top += (e.Y - py);
+                    }
                 }
                 else
                 {
@@ -5371,6 +5768,12 @@ namespace aSMP
         }
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
+            if (rasterInfoPickArmed && IsRasterInfoTabActive() && e.Button == MouseButtons.Left)
+            {
+                PickRasterInfoCell(e.X, e.Y);
+                return;
+            }
+
             // Enter selection mode while the SHIFT key is pressed
             if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
             {
@@ -5383,6 +5786,10 @@ namespace aSMP
             else
             {
                 // Keep your existing painting/cursor logic here
+                if (e.Button == MouseButtons.Left && radioToggleBri.Checked)
+                {
+                    StartBrightnessStroke(e.X / cw, e.Y / ch);
+                }
                 if (!(radioButton4.Checked || optDraggingNow)) move_cursor(e.X, e.Y, (int)e.Button);
                 if (e.Button == MouseButtons.Left)
                 {
@@ -5622,7 +6029,7 @@ namespace aSMP
 
         private void button22_Click(object sender, EventArgs e)
         {
-
+            button22_Click_1(sender, e);
         }
 
         private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
@@ -6352,7 +6759,9 @@ TIPS
 
         private void checkMARK_CheckedChanged(object sender, EventArgs e)
         {
-            
+            button21.Enabled = checkMARK.Checked && mismatchPreviewValid && lastcomputedmarks;
+            if (!button21.Enabled) button21.Text = "Toggle Mismatches";
+            if (lastcomputedmarks) setup();
         }
 
         private void trackAlpha_Scroll(object sender, EventArgs e)
@@ -6413,167 +6822,6 @@ TIPS
             }
         }
 
-        private void OldBalance()
-        {
-
-            // 1. Read parameters and compute loads
-            BalanceThreshold = Convert.ToInt32(txtBalance.Text);
-            RecalculateLoads();
-
-            int totalMoved = 0;
-            int maxPasses = 50; // limit to avoid infinite loops (enough for the ripple effect)
-
-            // 2. Balancing loop (passes)
-            // Run several sweeps to allow a ripple effect
-            for (int pass = 0; pass < maxPasses; pass++)
-            {
-                int movedInThisPass = 0;
-
-                // --- PHASE 1: UPWARD PUSH ---
-                // Sweep from top to bottom (1 -> 191).
-                // Example: if row 2 pushes load into row 1, row 3 can push into row 2 when we get there.
-                // This also opens room: if row 1 offloads into row 0, row 2 can more easily target row 1.
-                // Hence scanning from 1 to 191 is ideal for the upward push.
-                for (int y = 1; y < 192; y++)
-                {
-                    if (totmlt[y] > BalanceThreshold)
-                    {
-                        // Try the upper row (y-1) even if it is currently full;
-                        // the next pass might empty it just in time.
-                        movedInThisPass += TryShiftLine(y, y - 1);
-                    }
-                }
-
-                // --- PHASE 2: DOWNWARD PUSH ---
-                // Sweep from bottom to top (190 -> 0).
-                // 190 pushes to 191, 189 pushes to 190, etc.
-                for (int y = 190; y >= 0; y--)
-                {
-                    if (totmlt[y] > BalanceThreshold)
-                    {
-                        movedInThisPass += TryShiftLine(y, y + 1);
-                    }
-                }
-
-                totalMoved += movedInThisPass;
-
-                // If nothing moved during this pass we reached equilibrium.
-                if (movedInThisPass == 0) break;
-            }
-
-            // 3. Refresh the screen
-            setup();
-            textBox10.Text = "Balanced: " + totalMoved.ToString() + " blocks moved.";
-        }
-        private int TryShiftLine(int sourceY, int targetY)
-        {
-            int movedCount = 0;
-
-            // Sweep the source row (right-to-left preserves visual continuity better)
-            for (int x = 31; x >= 0; x--)
-            {
-                // Stop if the target row is already at capacity (over the threshold).
-                // We could relax this when we rely on the ripple effect to empty it later,
-                // but keeping it under the threshold preserves visuals.
-                if (totmlt[targetY] >= BalanceThreshold) break;
-
-                // Stop once the source drops below the threshold.
-                if (totmlt[sourceY] <= BalanceThreshold) break;
-
-                // Try to transfer the cell
-                if (TryMoveCell(x, sourceY, targetY))
-                {
-                    movedCount++;
-                }
-            }
-            return movedCount;
-        }
-        private bool TryMoveCell(int x, int sourceY, int targetY)
-        {
-            // Rule 1: source must be MLT and target must be normal (non-MLT).
-            if (chex[x, sourceY] == 0) return false; // no load in the source
-            if (chex[x, targetY] == 1) return false; // target already full
-
-            // Fetch colors and bitmaps
-            int srcAttr = mlt[x, sourceY];
-            int trgAttr = mlt[x, targetY];
-            byte trgBmp = bmp[x, targetY];
-
-            // Rule 2: target cell must show a single color (bitmap 0 or 255).
-            // If the bitmap is mixed (0 < bmp < 255) we cannot swap attributes without corrupting visuals.
-            if (trgBmp != 0 && trgBmp != 255) return false;
-
-            // Split color components [0]:Ink, [1]:Paper, [2]:Brightness (0 or 8)
-            int[] sC = getattr((byte)srcAttr);
-            int[] tC = getattr((byte)trgAttr);
-
-            // Rule 3: brightness must match
-            // (assuming getattr returns brightness in the 3rd element)
-            if (sC[2] != tC[2]) return false;
-
-            // Determine the currently visible color on the target
-            // If bitmap is 255 then Ink (index 0) is visible, otherwise Paper (index 1).
-            // Reminder: getattr returns [0]=Ink, [1]=Paper.
-            int targetVisibleColor = (trgBmp == 255) ? tC[0] : tC[1];
-
-            // Rule 4: the target's visible color must match one of the source colors
-            // so that when we copy the attribute we can keep the same visual (possibly by flipping the bitmap).
-
-            bool matchFound = false;
-            byte newTargetBitmap = 0;
-
-            if (targetVisibleColor == sC[0])
-            {
-                // Target color matches the source INK color, force bitmap to FULL INK (255).
-                matchFound = true;
-                newTargetBitmap = 255;
-            }
-            else if (targetVisibleColor == sC[1])
-            {
-                // Target color matches the source PAPER color, force bitmap to FULL PAPER (0).
-                matchFound = true;
-                newTargetBitmap = 0;
-            }
-
-            if (matchFound)
-            {
-                // --- PROCESS ---
-
-                // 1. Copy attribute: give the source color to the target.
-                mlt[x, targetY] = srcAttr;
-
-                // 2. Update bitmap: apply the bitmap we calculated to preserve visuals.
-                bmp[x, targetY] = newTargetBitmap;
-
-                // 3. Update load state (chex and totmlt)
-                chex[x, sourceY] = 0; // source becomes a normal cell
-                chex[x, targetY] = 1; // target becomes an MLT cell
-
-                totmlt[sourceY]--;
-                totmlt[targetY]++;
-
-                return true; // transfer succeeded
-            }
-
-            return false; // colors did not match
-        }
-
-        private void RecalculateLoads()
-        {
-            Array.Clear(totmlt, 0, totmlt.Length);
-            for (int y = 0; y < 192; y++)
-            {
-                // Count chex values directly instead of relying on grouping (gmax),
-                // because balancing operates on individual cells in real time.
-                int count = 0;
-                for (int x = 0; x < 32; x++)
-                {
-                    if (chex[x, y] == 1) count++;
-                }
-                totmlt[y] = count;
-            }
-        }
-
         /// <summary>
         /// Starts the balancing operation.
         /// </summary>
@@ -6584,236 +6832,20 @@ TIPS
         /// <param name="similarColor">If 1: treat Red=Magenta, Green=Cyan, Yellow=White.</param>
         private void PerformBalance(int threshold, int targetLine, int ignorePixel, int ignoreBright, int similarColor)
         {
-            BalanceThreshold = threshold;
-            RecalculateLoads(); // calculate current loads
+            //insert code here
+            //..
 
-            int totalMoved = 0;
-            int maxPasses = (targetLine == -1) ? 50 : 1; // entire screen uses ripple passes, single line uses one pass.
 
-            for (int pass = 0; pass < maxPasses; pass++)
-            {
-                int movedInThisPass = 0;
 
-                if (targetLine == -1)
-                {
-                    // --- FULL SCREEN MODE ---
-
-                    // 1. Upward push phase (1 -> 191)
-                    for (int y = 1; y < 192; y++)
-                    {
-                        if (totmlt[y] > BalanceThreshold)
-                            movedInThisPass += AttemptPushLoad(y, y - 1, ignorePixel, ignoreBright, similarColor);
-                    }
-
-                    // 2. Downward push phase (190 -> 0)
-                    for (int y = 190; y >= 0; y--)
-                    {
-                        if (totmlt[y] > BalanceThreshold)
-                            movedInThisPass += AttemptPushLoad(y, y + 1, ignorePixel, ignoreBright, similarColor);
-                    }
-                }
-                else
-                {
-                    // --- SINGLE-LINE MODE ---
-                    int y = targetLine;
-                    if (totmlt[y] > BalanceThreshold)
-                    {
-                        // Try pushing upward first
-                        if (y > 0) movedInThisPass += AttemptPushLoad(y, y - 1, ignorePixel, ignoreBright, similarColor);
-
-                        // If still above threshold, push downward
-                        if (totmlt[y] > BalanceThreshold && y < 191)
-                            movedInThisPass += AttemptPushLoad(y, y + 1, ignorePixel, ignoreBright, similarColor);
-                    }
-                }
-
-                totalMoved += movedInThisPass;
-                if (movedInThisPass == 0) break; // stop if nothing moved
-            }
+            // end of balancing operation
 
             setup(); // refresh the screen
-            textBox10.Text = $"Balanced: {totalMoved} blocks moved.";
-        }
-        private int AttemptPushLoad(int sourceY, int targetY, int ignorePixel, int ignoreBright, int similarColor)
-        {
-            int movedCount = 0;
-
-            // Scan right-to-left (usually keeps visuals more consistent)
-            for (int x = 31; x >= 0; x--)
-            {
-                // Stop pushing if the target is already full
-                if (totmlt[targetY] >= BalanceThreshold) break;
-
-                // Stop once the source is relieved
-                if (totmlt[sourceY] <= BalanceThreshold) break;
-
-                // Try the transfer with the extended rules
-                if (TryMoveCellExtended(x, sourceY, targetY, ignorePixel, ignoreBright, similarColor))
-                {
-                    movedCount++;
-                }
-            }
-            return movedCount;
+            textBox10.Text = $"Balanced: xxx blocks moved.";
         }
 
-        private bool TryMoveCellExtended(int x, int sourceY, int targetY, int ignorePixel, int ignoreBright, int similarColor)
-        {
-            // Basic checks: source must be MLT, target must be empty (non-MLT)
-            if (chex[x, sourceY] == 0) return false;
-            if (chex[x, targetY] == 1) return false;
 
-            byte currentBmp = bmp[x, targetY];
-            byte cleanBmp = currentBmp;
-            bool isClean = false;
+        
 
-            // --- RULE 1: IGNORE PIXEL ---
-            // Target bitmap must be 0 or 255. Otherwise, if ignorePixel=1, try to clean it up.
-
-            if (currentBmp == 0 || currentBmp == 255)
-            {
-                isClean = true;
-            }
-            else if (ignorePixel == 1)
-            {
-                // Is only one bit set? (e.g. 00000100 -> Paper is visible yet one pixel is noisy)
-                // (x & (x - 1)) == 0 checks whether the value is a power of two (single bit set).
-                if ((currentBmp & (currentBmp - 1)) == 0)
-                {
-                    cleanBmp = 0; // dirty Paper -> clean Paper
-                    isClean = true;
-                }
-                // Is only one bit cleared? (e.g. 11111011 -> Ink is visible yet one pixel is noisy)
-                // When inverted the result must be a power of two.
-                else if ((~currentBmp & (~currentBmp - 1)) == 0)
-                {
-                    cleanBmp = 255; // dirty Ink -> clean Ink
-                    isClean = true;
-                }
-            }
-
-            if (!isClean) return false; // cannot clean mixed bitmap, abort.
-
-
-            // Renkleri al
-            int srcAttr = mlt[x, sourceY];
-            int trgAttr = mlt[x, targetY];
-            int[] sC = getattr((byte)srcAttr); // [0]Ink, [1]Paper, [2]Bright
-            int[] tC = getattr((byte)trgAttr);
-
-            // --- RULE 2: IGNORE BRIGHT ---
-            if (ignoreBright == 0)
-            {
-                if (sC[2] != tC[2]) return false; // brightness mismatch, abort
-            }
-            // For ignoreBright=1 we skip the check.
-            // Note: once the transfer happens the target brightness follows the source anyway.
-
-
-            // Determine the currently visible color on the target
-            int targetVisibleColor = (cleanBmp == 255) ? tC[0] : tC[1];
-
-            // --- RULE 3: SIMILAR COLOR ---
-            // Does the target's visible color match the source INK or PAPER color?
-
-            bool matchFound = false;
-            byte newTargetBitmap = 0;
-
-            // Compare with source INK
-            if (CheckColorMatch(targetVisibleColor, sC[0], similarColor))
-            {
-                matchFound = true;
-                newTargetBitmap = 255; // target must now show the source INK
-            }
-            // Compare with source PAPER
-            else if (CheckColorMatch(targetVisibleColor, sC[1], similarColor))
-            {
-                matchFound = true;
-                newTargetBitmap = 0; // target must now show the source PAPER
-            }
-
-            if (matchFound)
-            {
-                // --- APPLY ---
-
-                // 1. Copy attribute (source -> target)
-                mlt[x, targetY] = srcAttr;
-
-                // 2. Update bitmap (cleaned and flipped if needed)
-                bmp[x, targetY] = newTargetBitmap;
-
-                // 3. Update loads
-                chex[x, sourceY] = 0;
-                chex[x, targetY] = 1;
-                totmlt[sourceY]--;
-                totmlt[targetY]++;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool CheckColorMatch(int c1, int c2, int similarEnabled)
-        {
-            // Strip brightness (mod 8) so we only compare core colors,
-            // since ignoreBright already handles brightness or they match.
-            int base1 = c1 % 8;
-            int base2 = c2 % 8;
-
-            if (base1 == base2) return true; // exact match
-
-            if (similarEnabled == 1)
-            {
-                // Red(2) <=> Magenta(3)
-                if ((base1 == 2 && base2 == 3) || (base1 == 3 && base2 == 2)) return true;
-                // Green(4) <=> Cyan(5)
-                if ((base1 == 4 && base2 == 5) || (base1 == 5 && base2 == 4)) return true;
-                // Yellow(6) <=> White(7)
-                if ((base1 == 6 && base2 == 7) || (base1 == 7 && base2 == 6)) return true;
-            }
-
-            return false;
-        }
-        private void btnLoadBalance_Click2(object sender, EventArgs e)
-        {
-            BalanceThreshold = Convert.ToInt32(txtBalance.Text);
-            int moved = 0;
-
-            // 1. Compute the current load (clear and refill the totmlt array)
-            Array.Clear(totmlt, 0, totmlt.Length);
-            for (int y = 0; y < 192; y++)
-            {
-                for (int x = 0; x < 32; x++)
-                {
-                    if (chex[x, y] != 0) totmlt[y]++;
-                }
-            }
-
-            // 2. Balancing loop
-            // Start at row 1 because nothing can push above row 0.
-            for (int y = 1; y < 192; y++)
-            {
-                // If this row exceeds the threshold AND the row above has room
-                if (totmlt[y] > BalanceThreshold)
-                {
-                    // Ensure the upper row (y-1) is still below the limit
-                    // Note: raster 0 is often treated as unlimited, but we apply the threshold anyway
-                    if (totmlt[y - 1] < BalanceThreshold)
-                    {
-                        // Attempt to push the load upwards
-                        int before = totmlt[y];
-                        CopyFromAboveRaster(y); // this now behaves like PushLoadToAbove
-                        int after = totmlt[y];
-
-                        moved += (before - after);
-                    }
-                }
-            }
-
-            setup();
-            textBox10.Text = "Balanced: " + moved.ToString() + " blocks shifted up.";
-        }
-       
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -6831,225 +6863,7 @@ TIPS
             setPalette(Convert.ToInt32(txtHiVal.Text), Convert.ToInt32(txtLowVal.Text));
             setup();
         }
-        private void CopyFromAboveRaster(int y)
-        {
-            // y: source row (overloaded)
-            // y-1: target row (will receive load)
-
-            // Scanning right-to-left generally improves raster timing,
-            // though left-to-right would work for visual consistency; keep the current approach.
-            for (int x = 31; x >= 0; x--)
-            {
-                // Criteria:
-                // 1. Current cell must be MLT (chex=1)
-                // 2. The upper cell must not be MLT (chex=0) -> destination is free
-                if (chex[x, y] == 1 && chex[x, y - 1] == 0)
-                {
-                    // Fetch colors
-                    // mlt[x, y] -> source color (to be pushed upward)
-                    // mlt[x, y-1] -> current upper color (will be overwritten, but we try to preserve visuals)
-
-                    int[] cDown = getattr((byte)mlt[x, y]);     // [0]Ink, [1]Paper, [2]Bright
-                    int[] cUp = getattr((byte)mlt[x, y - 1]);   // [0]Ink, [1]Paper, [2]Bright
-
-                    bool match = false;
-                    bool invertNeeded = false;
-
-                    // --- Color matching logic ---
-
-                    // Case 1: do the colors match exactly? (e.g. lower cell is Blue/Yellow and upper cell also shows Blue/Yellow)
-                    // A brightness match gives us a good chance.
-                    if (cDown[2] == cUp[2])
-                    {
-                        // Do either Ink or Paper colors line up?
-                        if (cDown[0] == cUp[0] || cDown[1] == cUp[1])
-                        {
-                            match = true;
-                            invertNeeded = false;
-                        }
-                        // Are colors reversed? (e.g. lower Ink matches upper Paper)
-                        else if (cDown[0] == cUp[1] || cDown[1] == cUp[0])
-                        {
-                            match = true;
-                            invertNeeded = true;
-                        }
-                    }
-
-                    // Case 2: the upper row is "empty" or single-colored (legacy behaviour, now extended)
-                    // If the upper bitmap is entirely 0 (Full Paper) or 255 (Full Ink),
-                    // changing its color does less visual harm.
-                    if (!match)
-                    {
-                        if (bmp[x, y - 1] == 0) // Upper row is showing PAPER only
-                        {
-                            // If the PAPER color we move up matches the upper PAPER,
-                            // or the lower INK matches the upper PAPER (with inversion)
-                            if (cDown[1] == cUp[1]) { match = true; invertNeeded = false; }
-                            else if (cDown[0] == cUp[1]) { match = true; invertNeeded = true; }
-                        }
-                        else if (bmp[x, y - 1] == 255) // Upper row is showing INK only
-                        {
-                            if (cDown[0] == cUp[0]) { match = true; invertNeeded = false; }
-                            else if (cDown[1] == cUp[0]) { match = true; invertNeeded = true; }
-                        }
-                    }
-
-                    // --- Action ---
-                    if (match)
-                    {
-                        // 1. Move the attribute upward (push the load)
-                        mlt[x, y - 1] = mlt[x, y];
-
-                        // 2. Invert the upper bitmap if needed to fit the new colors
-                        // This tries to keep the upper row visually consistent
-                        if (invertNeeded)
-                        {
-                            bmp[x, y - 1] = (byte)(~bmp[x, y - 1]);
-                        }
-
-                        // 3. Update flags
-                        chex[x, y] = 0;       // lower cell no longer MLT (load reduced)
-                        chex[x, y - 1] = 1;   // upper cell now MLT (load increased)
-
-                        // 4. Update counters
-                        totmlt[y]--;
-                        totmlt[y - 1]++;
-
-                        // 5. Exit loop if the upper row hits capacity or the current row is relieved
-                        if (totmlt[y - 1] >= BalanceThreshold) break;
-                        if (totmlt[y] <= BalanceThreshold) break;
-                    }
-                }
-            }
-        }
-        private int CopyFromAboveRaster2(int y, bool processSimilar = false)
-        {
-            if (y == 0) return totmlt[y];
-
-            for (int k = 31; k >= 0; k--)
-            {
-                if ((chex[k, y] != 0) && (chex[k, y - 1] == 0))
-                {
-                    int[] g = getattr((byte)mlt[k, y]);     // source (lower)
-                    int[] r = getattr((byte)mlt[k, y - 1]); // target (upper)
-
-                    if (r[0] != r[1]) continue; // ensure the target is single-colored
-
-                    bool matchFound = false;
-                    bool needsInvert = false;
-
-                    // Rule 2: special handling for black (skip brightness check)
-                    if (IsColorBlack(r[0]))
-                    {
-                        if (IsColorBlack(g[0])) // match with black INK
-                        {
-                            matchFound = true;
-                            needsInvert = false;
-                        }
-                        else if (IsColorBlack(g[1])) // match with black PAPER
-                        {
-                            matchFound = true;
-                            needsInvert = true;
-                        }
-                    }
-
-                    // If black did not trigger, apply the normal rules
-                    if (!matchFound)
-                    {
-                        // Rule 1 & 3: exact or similar color match (brightness must align)
-                        if (g[2] == r[2]) // brightness bits must match
-                        {
-                            bool inkMatch = processSimilar ? AreColorsSimilar(r[0], g[0]) : (r[0] == g[0]);
-                            bool paperMatch = processSimilar ? AreColorsSimilar(r[0], g[1]) : (r[0] == g[1]);
-
-                            if (inkMatch)
-                            {
-                                matchFound = true;
-                                needsInvert = false; // INK matched, keep roles
-                            }
-                            else if (paperMatch)
-                            {
-                                matchFound = true;
-                                needsInvert = true;  // PAPER matched, invert roles
-                            }
-                        }
-                    }
-
-                    // === ACTION ===
-                    if (matchFound)
-                    {
-                        // 1. Copy attribute data to the upper cell.
-                        mlt[k, y - 1] = mlt[k, y];
-
-                        // 2. Copy bitmap data (invert if needed).
-                        bmp[k, y - 1] = needsInvert ? (byte)~bmp[k, y] : bmp[k, y];
-
-                        // 3. Update state flags and counters.
-                        chex[k, y] = 0;
-                        totmlt[y]--;
-                        chex[k, y - 1] = 1;
-                        totmlt[y - 1]++;
-
-                        // 4. Check balancing thresholds.
-                        if ((totmlt[y - 1] > BalanceThreshold) && (y % 8 != 0)) break; // first raster has no limit
-                        if (totmlt[y] <= BalanceThreshold) break;
-                    }
-                }
-            }
-            return totmlt[y];
-        }
-
-        private void CopyFromAboveRaster2(int y)
-        {
-            for (int k = 31; k >= 0; k--) //scan from right so raster has more time to update
-            {
-
-                if ((chex[k, y] != 0) && (chex[k, y - 1] == 0)) //if it's a multicolor cell but above a normal cell    //(chex[k, fully] != 0) && 
-                {
-
-                    int[] r = getattr((byte)mlt[k, (y-1)]); //get above cell colors
-                    int[] g = getattr((byte)mlt[k, y]); //get current cell colors
-                    if ((r[0] == r[1]) && ((g[0] == r[0]) || (g[1] == r[0]) || (g[0] == r[1]) || (g[1] == r[1]))) //if above cell has same colors as current cell
-                    {
-                        //we got a candidate!
-                        //
-                        mlt[k, y] = mlt[k, (y - 1)];
-                        bmp[k, y] = bmp[k, (y - 1)];
-                        chex[k, y] = 0; //no more multicolor
-                        totmlt[y]--;
-                        totmlt[y - 1]++;
-                        if (totmlt[y - 1] > BalanceThreshold) break; //no more room above
-
-                    }
-                }
-
-
-            }
-        }
-
-
-        /// <summary>
-        /// Checks whether two colors should be treated as similar (when processSimilar=true).
-        /// Considers Red <=> Magenta, Green <=> Cyan, Yellow <=> White plus exact matches.
-        /// </summary>
-        private bool AreColorsSimilar(int color1, int color2)
-        {
-            if (color1 == color2) return true;
-
-            // Strip brightness to compare only the base colors.
-            int baseColor1 = color1 % 8;
-            int baseColor2 = color2 % 8;
-
-            // Red (2) <=> Magenta (3)
-            if ((baseColor1 == 2 && baseColor2 == 3) || (baseColor1 == 3 && baseColor2 == 2)) return true;
-            // Green (4) <=> Cyan (5)
-            if ((baseColor1 == 4 && baseColor2 == 5) || (baseColor1 == 5 && baseColor2 == 4)) return true;
-            // Yellow (6) <=> White (7)
-            if ((baseColor1 == 6 && baseColor2 == 7) || (baseColor1 == 7 && baseColor2 == 6)) return true;
-
-            return false;
-        }
-
+        
 
     private void pNGBMPImageToolStripMenuItem_Click(object sender, EventArgs e)
     {
@@ -7086,79 +6900,6 @@ TIPS
             ExecuteConversion();
         }
 
-        private void ExecuteConversion3()
-        {
-            if (originalImage == null)
-            {
-                MessageBox.Show("Lütfen önce bir resim yükleyin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (noProcess) return;
-
-            // ... (Parameter preparation stays the same) ...
-            var parameters = new MLTConverter.ConversionParams
-            {
-                // ... (Place your parameters here)
-                RedLow = rangeSliderNet41.LowerValue,
-                // ...
-            };
-
-            MLTConverter converter = new MLTConverter();
-            var result = converter.ConvertImage(originalImage, parameters);
-
-            // -- SELECTION AREA CALCULATION --
-            int startCellX = 0;
-            int endCellX = 31;
-            int startCellY = 0;
-            int endCellY = 191;
-
-            if (hasValidSelection)
-            {
-                // Convert pixel coordinates to cell coordinates (0-31, 0-191)
-                // Use Math.Min/Max because the user may select in reverse order
-                int pX1 = Math.Min(selectionStart.X, selectionEnd.X);
-                int pY1 = Math.Min(selectionStart.Y, selectionEnd.Y);
-                int pX2 = Math.Max(selectionStart.X, selectionEnd.X);
-                int pY2 = Math.Max(selectionStart.Y, selectionEnd.Y);
-
-                // cw and ch are your global zoom variables.
-                // Typically: x / cw yields the 0..31 range.
-                startCellX = Math.Max(0, pX1 / cw);
-                endCellX = Math.Min(31, pX2 / cw);
-
-                startCellY = Math.Max(0, pY1 / ch);
-                endCellY = Math.Min(191, pY2 / ch);
-            }
-
-            // -- COPY PHASE --
-            // The entire image is converted (inside result) but we only copy the selected area.
-
-            for (int y = 0; y < 192; y++)
-            {
-                for (int x = 0; x < 32; x++)
-                {
-                    // When a selection exists and the current cell is outside the range,
-                    // skip it so the previous content stays intact.
-                    if (hasValidSelection)
-                    {
-                        if (x < startCellX || x > endCellX || y < startCellY || y > endCellY)
-                        {
-                            continue;
-                        }
-                    }
-
-                    int linearIndex = (y * 32) + x;
-
-                    // Bitmap verisini aktar
-                    bmp[x, y] = result.BitmapData[linearIndex];
-
-                    // Attribute verisini aktar
-                    mlt[x, y] = result.AttributeData[linearIndex];
-                }
-            }
-
-            setup(); // repaint screen
-        }
         private void ExecuteConversion()
         {
             if (originalImage == null)
@@ -7301,13 +7042,7 @@ TIPS
         }
 
 
-        /// <summary>
-        /// Checks whether a color is black (normal black=0, bright black=8).
-        /// </summary>
-        private bool IsColorBlack(int color)
-        {
-            return color == 0 || color == 8;
-        }
+
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
@@ -7394,32 +7129,37 @@ TIPS
             ExecuteConversion();
         }
 
-        private void CopyFromBelowRaster(int y) //auto fix utility
+        private void button21_Click_1(object sender, EventArgs e)
         {
-            int freey = y;
-            int fully = (y + 1);
-            
-            for (int k = 31; k >=0; k--) //scan from right so raster has more time to update
-            {
+            if (!checkMARK.Checked || !mismatchPreviewValid || !lastcomputedmarks) return;
 
-                if (totmlt[freey] <= BalanceThreshold) //BalanceThreshold default 10
+            mismatchMarksVisible = !mismatchMarksVisible;
+            button21.Text = mismatchMarksVisible ? "Hide Mismatches" : "Show Mismatches";
+
+            using (Graphics G = Graphics.FromImage(buffy))
+            {
+                foreach (Point cell in mismatchCells)
                 {
-                    if ((chex[k, freey] == 0)) //if not a multicolor cell     //(chex[k, fully] != 0) && 
-                    {
-                        if (CopyFromBelowAndFix(k, freey))
-                        {
-                            totmlt[freey]++;
-                            totmlt[fully]--;
-                        }
-                    }
-                }
-                else
-                {
-                    break;
+                    setcell(G, cell.X, cell.Y);
                 }
             }
-            
+
+            pictureBox1.Image = buffy;
         }
+
+        private void button22_Click_1(object sender, EventArgs e)
+        {
+            if (!IsRasterInfoTabActive()) return;
+            if (rasterInfoPickArmed || rasterInfoPicked)
+            {
+                CancelRasterInfoPick();
+            }
+            else
+            {
+                SetRasterInfoPickArmed(true);
+            }
+        }
+
 
         private bool CopyFromBelowAndFix(int cellX, int cellY) //editor tool
         {
@@ -7485,6 +7225,7 @@ TIPS
         private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
         {
             label19.Text = "Contention model: " + comboBox2.Text;
+            if (!IsRasterInfoTabActive()) CancelRasterInfoPick();
         }
 
         private void button5_Click_1(object sender, EventArgs e)
@@ -7494,6 +7235,10 @@ TIPS
 
         private void button15_Click_1(object sender, EventArgs e)
         {
+            codeLineIndex = 0;
+            txtLastCodeLine.Text = "0";
+            lastcomputedmarks = false;
+            ClearMismatchPreview();
             startemulation();
         }
 
@@ -7504,7 +7249,13 @@ TIPS
 
         private void button17_Click_1(object sender, EventArgs e)
         {
-            button9_Click(sender, e);
+            emulationactive = false;
+            codeLineIndex = 0;
+            txtLastCodeLine.Text = "0";
+            lastcomputedmarks = false;
+            ClearMismatchPreview();
+            button9.Text = "Emulation Ended.";
+            setup();
 
         }
 
@@ -7576,6 +7327,7 @@ TIPS
             else
             {
                 isHeldDown = false; // existing logic
+                EndBrightnessStroke();
             }
         }
         private void pictureBox1_MouseUp2(object sender, MouseEventArgs e)
