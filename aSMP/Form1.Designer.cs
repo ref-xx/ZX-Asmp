@@ -450,8 +450,7 @@
             // chkSimilarColor
             // 
             this.chkSimilarColor.AutoSize = true;
-            this.chkSimilarColor.Checked = true;
-            this.chkSimilarColor.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkSimilarColor.Enabled = false;
             this.chkSimilarColor.Location = new System.Drawing.Point(8, 88);
             this.chkSimilarColor.Name = "chkSimilarColor";
             this.chkSimilarColor.Size = new System.Drawing.Size(118, 17);
@@ -1002,7 +1001,7 @@
             // button25
             // 
             this.button25.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button25.Location = new System.Drawing.Point(5, 727);
+            this.button25.Location = new System.Drawing.Point(5, 781);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(112, 23);
             this.button25.TabIndex = 15;
@@ -1026,7 +1025,7 @@
             // button6
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.Location = new System.Drawing.Point(182, 727);
+            this.button6.Location = new System.Drawing.Point(182, 781);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(93, 23);
             this.button6.TabIndex = 2;
@@ -1136,7 +1135,7 @@
             // button11
             // 
             this.button11.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button11.Location = new System.Drawing.Point(123, 727);
+            this.button11.Location = new System.Drawing.Point(123, 781);
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(53, 23);
             this.button11.TabIndex = 14;
@@ -1166,7 +1165,7 @@
             this.textBox7.Multiline = true;
             this.textBox7.Name = "textBox7";
             this.textBox7.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox7.Size = new System.Drawing.Size(268, 578);
+            this.textBox7.Size = new System.Drawing.Size(268, 632);
             this.textBox7.TabIndex = 12;
             this.textBox7.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textBox7_MouseClick);
             // 
@@ -1396,7 +1395,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(3, 302);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(188, 446);
+            this.listBox1.Size = new System.Drawing.Size(188, 485);
             this.listBox1.TabIndex = 16;
             this.listBox1.Visible = false;
             // 

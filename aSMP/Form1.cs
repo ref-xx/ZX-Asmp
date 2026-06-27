@@ -6826,11 +6826,11 @@ TIPS
 
             if (chkBalanceAll.Checked)
             {
-                PerformBalance(th, -1, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
+                PerformBalance(th, -1, chkIgnorePixel.Checked ? 1 : 0, chkIgnoreBright.Checked ? 1 : 0, 0);
             }
             else
             {
-                PerformBalance(th, targetLine, 0, chkIgnoreBright.Checked ? 1 : 0, 0);
+                PerformBalance(th, targetLine, chkIgnorePixel.Checked ? 1 : 0, chkIgnoreBright.Checked ? 1 : 0, 0);
             }
         }
 
@@ -6846,6 +6846,7 @@ TIPS
         {
             if (threshold < 1) threshold = 10;
             bool ignoreBrightness = ignoreBright != 0;
+            bool ignorePixels = ignorePixel != 0;
 
             if (targetLine == -1)
             {
@@ -6853,17 +6854,20 @@ TIPS
                 int totalAbsorbed = 0;
                 int totalBrightMoved = 0;
                 int totalBrightAbsorbed = 0;
+                int totalPixelAbsorbed = 0;
 
                 for (int y = 191; y >= 0; y--)
                 {
-                    BalanceResult lineResult = PerformBalanceLine(threshold, y, ignoreBrightness, false);
+                    BalanceResult lineResult = PerformBalanceLine(threshold, y, ignoreBrightness, ignorePixels, false);
                     totalMoved += lineResult.Moved;
                     totalAbsorbed += lineResult.Absorbed;
                     totalBrightMoved += lineResult.BrightMoved;
                     totalBrightAbsorbed += lineResult.BrightAbsorbed;
+                    totalPixelAbsorbed += lineResult.PixelAbsorbed;
                 }
 
-                if ((totalMoved > 0) || (totalAbsorbed > 0) || (totalBrightMoved > 0) || (totalBrightAbsorbed > 0))
+                if ((totalMoved > 0) || (totalAbsorbed > 0) || (totalBrightMoved > 0) ||
+                    (totalBrightAbsorbed > 0) || (totalPixelAbsorbed > 0))
                 {
                     lastcomputedmarks = false;
                     ClearMismatchPreview();
@@ -6873,13 +6877,15 @@ TIPS
 
                 setup();
                 textBox10.Text = "Balanced all: " + totalMoved + " moved, " + totalAbsorbed + " absorbed, " +
-                    totalBrightMoved + " bright moved, " + totalBrightAbsorbed + " bright absorbed.";
+                    totalBrightMoved + " bright moved, " + totalBrightAbsorbed + " bright absorbed, " +
+                    totalPixelAbsorbed + " pixels ignored.";
                 return;
             }
 
-            BalanceResult result = PerformBalanceLine(threshold, targetLine, ignoreBrightness, true);
+            BalanceResult result = PerformBalanceLine(threshold, targetLine, ignoreBrightness, ignorePixels, true);
 
-            if ((result.Moved > 0) || (result.Absorbed > 0) || (result.BrightMoved > 0) || (result.BrightAbsorbed > 0))
+            if ((result.Moved > 0) || (result.Absorbed > 0) || (result.BrightMoved > 0) ||
+                (result.BrightAbsorbed > 0) || (result.PixelAbsorbed > 0))
             {
                 lastcomputedmarks = false;
                 ClearMismatchPreview();
@@ -6891,7 +6897,7 @@ TIPS
             textBox10.Text = result.Message;
         }
 
-        private BalanceResult PerformBalanceLine(int threshold, int targetLine, bool ignoreBrightness, bool showMessages)
+        private BalanceResult PerformBalanceLine(int threshold, int targetLine, bool ignoreBrightness, bool ignorePixel, bool showMessages)
         {
             BalanceResult result = new BalanceResult();
 
@@ -6984,10 +6990,29 @@ TIPS
                 }
             }
 
+            if (ignorePixel)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    if (targetWrites <= targetLimit) break;
+                    if (chex[x, targetLine] == 0) continue;
+                    if (WouldAbsorbOverflowNextRaster(x, targetLine, threshold)) continue;
+
+                    if (TryAbsorbSingleSetPixelAsSingleColor(x, targetLine, ignoreBrightness))
+                    {
+                        chex[x, targetLine] = 0;
+                        UpdateBalanceWriteMarker(x, targetLine + 1);
+                        targetWrites--;
+                        result.PixelAbsorbed++;
+                    }
+                }
+            }
+
             calcgroups(previousLine);
             calcgroups(targetLine);
             result.Message = "Balanced: " + result.Moved + " moved, " + result.Absorbed + " absorbed, " +
-                result.BrightMoved + " bright moved, " + result.BrightAbsorbed + " bright absorbed.";
+                result.BrightMoved + " bright moved, " + result.BrightAbsorbed + " bright absorbed, " +
+                result.PixelAbsorbed + " pixels ignored.";
             return result;
         }
 
@@ -6997,6 +7022,7 @@ TIPS
             public int Absorbed;
             public int BrightMoved;
             public int BrightAbsorbed;
+            public int PixelAbsorbed;
             public string Message;
         }
 
@@ -7092,6 +7118,33 @@ TIPS
             if (swappedOrder) bmp[cellX, destinationLine] ^= 255;
 
             return true;
+        }
+
+        private bool TryAbsorbSingleSetPixelAsSingleColor(int cellX, int targetLine, bool ignoreBrightness)
+        {
+            byte originalBitmap = bmp[cellX, targetLine];
+            int setBits = CountSetBits(originalBitmap);
+            if ((setBits != 1) && (setBits != 7)) return false;
+
+            bmp[cellX, targetLine] = setBits == 1 ? (byte)0 : (byte)255;
+            if (TryCopyPreviousRasterColorToSingleColorTarget(cellX, targetLine, ignoreBrightness))
+            {
+                return true;
+            }
+
+            bmp[cellX, targetLine] = originalBitmap;
+            return false;
+        }
+
+        private int CountSetBits(byte value)
+        {
+            int count = 0;
+            while (value != 0)
+            {
+                count += value & 1;
+                value >>= 1;
+            }
+            return count;
         }
 
         private bool TryCopyPreviousRasterColorToSingleColorTarget(int cellX, int targetLine, bool ignoreBrightness)
