@@ -39,7 +39,11 @@ pixel art editor.
 Compression Methods
 -------------------
 
-Asmp uses the MegaLZ ZX7 ZX0 compression algorithms for the bitmap sections:
+Asmp uses ZX0 compression. The compression list offers none or zx0 (default when available).
+
+Enable Compress Code before generating to pack the raster code, attributes and bitmap together. This requires both zx0.exe and pasmo.exe in the application folder. The generated ASM embeds the compressed bytes and can be assembled or exported to TAP normally.
+
+The package loads at 32768 and expands at 33280. A separate loader stack preserves BASIC return state. Compressed input is relocated above the expanded program and below the IM2 area at 65021. Generation reports an error if both blocks cannot fit safely in that space. The built-in raster preview continues to use the original assembly.
 
 Output Generation
 -----------------
@@ -57,11 +61,20 @@ Recommended Tools
 To use Asmp outputs, you need the following files based on your output preferences.
 (asmp will work and produce asm files without those)
 - zx0.exe
-- zx7.exe
-- megalz.exe
 - pasmo.exe
 
 Copyright
 ---------
 
 Asmp (c) 2010 Arda Erdikmen
+
+Compression verification
+------------------------
+
+Build the Debug configuration, then run `tests/CompressionSmoke.ps1`. It uses
+`zx0.exe`, `dzx0.exe` and `pasmo.exe` from `aSMP/bin/Debug`. The test covers all
+three target models, BASIC return on/off, plain/bitmap/full compression,
+standalone ASM/TAP assembly, byte-for-byte decompression, oversized payloads
+and missing tools. A small instruction interpreter checks the generated
+loader, bitmap copy and BASIC register/SP restoration; it does not simulate
+Spectrum raster timing. Pass `-Fixture` to use another MLT file.

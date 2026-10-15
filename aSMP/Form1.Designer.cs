@@ -43,6 +43,14 @@
             this.label23 = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabFix = new System.Windows.Forms.TabPage();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button18 = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button7 = new System.Windows.Forms.Button();
+            this.button4 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.chkSimilarColor = new System.Windows.Forms.CheckBox();
             this.label30 = new System.Windows.Forms.Label();
@@ -53,20 +61,12 @@
             this.txtLastPickedRaster = new System.Windows.Forms.TextBox();
             this.txtBalance = new System.Windows.Forms.TextBox();
             this.btnLoadBalance = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.button18 = new System.Windows.Forms.Button();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.button7 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
             this.chkNotToggle = new System.Windows.Forms.CheckBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.textBox13 = new System.Windows.Forms.TextBox();
-            this.label5 = new System.Windows.Forms.Label();
             this.radioButton10 = new System.Windows.Forms.RadioButton();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.checkMark2 = new System.Windows.Forms.CheckBox();
             this.button21 = new System.Windows.Forms.Button();
             this.button17 = new System.Windows.Forms.Button();
             this.button16 = new System.Windows.Forms.Button();
@@ -88,6 +88,7 @@
             this.radioButton1 = new System.Windows.Forms.RadioButton();
             this.radioButton2 = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.checkBoxCompressCode = new System.Windows.Forms.CheckBox();
             this.chkUseBank7 = new System.Windows.Forms.CheckBox();
             this.chkUseLoop = new System.Windows.Forms.CheckBox();
             this.comboBox5 = new System.Windows.Forms.ComboBox();
@@ -202,7 +203,6 @@
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.textMegaLZ = new System.Windows.Forms.TextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.colorDialog1 = new System.Windows.Forms.ColorDialog();
@@ -241,9 +241,10 @@
             this.importToConversionBufferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.usageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.textZX7 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.txtZX0 = new System.Windows.Forms.TextBox();
+            this.radioButton11 = new System.Windows.Forms.RadioButton();
+            this.radioButton12 = new System.Windows.Forms.RadioButton();
             this.rangeSliderNet45 = new aSMP.RangeSliderNet4();
             this.rangeSliderNet44 = new aSMP.RangeSliderNet4();
             this.rangeSliderNet43 = new aSMP.RangeSliderNet4();
@@ -253,9 +254,9 @@
             this.panel2.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabFix.SuspendLayout();
-            this.groupBox5.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPage3.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
@@ -421,6 +422,7 @@
             // 
             // tabFix
             // 
+            this.tabFix.Controls.Add(this.groupBox5);
             this.tabFix.Controls.Add(this.groupBox1);
             this.tabFix.Location = new System.Drawing.Point(4, 40);
             this.tabFix.Name = "tabFix";
@@ -428,6 +430,112 @@
             this.tabFix.TabIndex = 7;
             this.tabFix.Text = "fix";
             this.tabFix.UseVisualStyleBackColor = true;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.button18);
+            this.groupBox1.Controls.Add(this.groupBox2);
+            this.groupBox1.Controls.Add(this.button7);
+            this.groupBox1.Controls.Add(this.button4);
+            this.groupBox1.Controls.Add(this.button2);
+            this.groupBox1.Controls.Add(this.button3);
+            this.groupBox1.Location = new System.Drawing.Point(12, 14);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(257, 137);
+            this.groupBox1.TabIndex = 27;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Tools";
+            // 
+            // button18
+            // 
+            this.button18.Location = new System.Drawing.Point(9, 60);
+            this.button18.Name = "button18";
+            this.button18.Size = new System.Drawing.Size(115, 23);
+            this.button18.TabIndex = 33;
+            this.button18.Text = "Replace Colors(!)";
+            this.toolTip1.SetToolTip(this.button18, "Replace all colors (selected ink becomes paper)");
+            this.button18.UseVisualStyleBackColor = true;
+            this.button18.Click += new System.EventHandler(this.button18_Click_1);
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Location = new System.Drawing.Point(9, 85);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(239, 8);
+            this.groupBox2.TabIndex = 32;
+            this.groupBox2.TabStop = false;
+            // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(9, 99);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(115, 23);
+            this.button7.TabIndex = 31;
+            this.button7.Text = "De-Flash";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click_1);
+            // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(134, 99);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(115, 23);
+            this.button4.TabIndex = 29;
+            this.button4.Text = "De-Bright";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click_1);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(9, 26);
+            this.button2.Margin = new System.Windows.Forms.Padding(2);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(115, 23);
+            this.button2.TabIndex = 24;
+            this.button2.Text = "&Fix Attributes";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(134, 26);
+            this.button3.Margin = new System.Windows.Forms.Padding(2);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(115, 23);
+            this.button3.TabIndex = 26;
+            this.button3.Text = "&Re-order";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.radioButton12);
+            this.tabPage3.Controls.Add(this.radioButton11);
+            this.tabPage3.Controls.Add(this.chkNotToggle);
+            this.tabPage3.Controls.Add(this.groupBox4);
+            this.tabPage3.Controls.Add(this.radioButton10);
+            this.tabPage3.Controls.Add(this.groupBox3);
+            this.tabPage3.Controls.Add(this.radioToggleBri);
+            this.tabPage3.Controls.Add(this.radioButton9);
+            this.tabPage3.Controls.Add(this.radioButton8);
+            this.tabPage3.Controls.Add(this.radioButton7);
+            this.tabPage3.Controls.Add(this.button24);
+            this.tabPage3.Controls.Add(this.radioButton3);
+            this.tabPage3.Controls.Add(this.radioButton4);
+            this.tabPage3.Controls.Add(this.pictureBox2);
+            this.tabPage3.Controls.Add(this.radioButton6);
+            this.tabPage3.Controls.Add(this.button14);
+            this.tabPage3.Controls.Add(this.label18);
+            this.tabPage3.Controls.Add(this.textBMP);
+            this.tabPage3.Controls.Add(this.radioButton5);
+            this.tabPage3.Controls.Add(this.radioButton1);
+            this.tabPage3.Controls.Add(this.radioButton2);
+            this.tabPage3.Location = new System.Drawing.Point(4, 40);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(281, 528);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "Edit";
+            this.tabPage3.UseVisualStyleBackColor = true;
             // 
             // groupBox5
             // 
@@ -440,7 +548,7 @@
             this.groupBox5.Controls.Add(this.txtLastPickedRaster);
             this.groupBox5.Controls.Add(this.txtBalance);
             this.groupBox5.Controls.Add(this.btnLoadBalance);
-            this.groupBox5.Location = new System.Drawing.Point(11, 270);
+            this.groupBox5.Location = new System.Drawing.Point(12, 157);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(257, 132);
             this.groupBox5.TabIndex = 37;
@@ -541,115 +649,10 @@
             this.btnLoadBalance.UseVisualStyleBackColor = true;
             this.btnLoadBalance.Click += new System.EventHandler(this.btnLoadBalance_Click);
             // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.button18);
-            this.groupBox1.Controls.Add(this.groupBox2);
-            this.groupBox1.Controls.Add(this.button7);
-            this.groupBox1.Controls.Add(this.button4);
-            this.groupBox1.Controls.Add(this.button2);
-            this.groupBox1.Controls.Add(this.button3);
-            this.groupBox1.Location = new System.Drawing.Point(12, 14);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(257, 137);
-            this.groupBox1.TabIndex = 27;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Tools";
-            // 
-            // button18
-            // 
-            this.button18.Location = new System.Drawing.Point(9, 60);
-            this.button18.Name = "button18";
-            this.button18.Size = new System.Drawing.Size(115, 23);
-            this.button18.TabIndex = 33;
-            this.button18.Text = "Replace Colors(!)";
-            this.toolTip1.SetToolTip(this.button18, "Replace all colors (selected ink becomes paper)");
-            this.button18.UseVisualStyleBackColor = true;
-            this.button18.Click += new System.EventHandler(this.button18_Click_1);
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Location = new System.Drawing.Point(9, 85);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(239, 8);
-            this.groupBox2.TabIndex = 32;
-            this.groupBox2.TabStop = false;
-            // 
-            // button7
-            // 
-            this.button7.Location = new System.Drawing.Point(9, 99);
-            this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(115, 23);
-            this.button7.TabIndex = 31;
-            this.button7.Text = "De-Flash";
-            this.button7.UseVisualStyleBackColor = true;
-            this.button7.Click += new System.EventHandler(this.button7_Click_1);
-            // 
-            // button4
-            // 
-            this.button4.Location = new System.Drawing.Point(134, 99);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(115, 23);
-            this.button4.TabIndex = 29;
-            this.button4.Text = "De-Bright";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click_1);
-            // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(9, 26);
-            this.button2.Margin = new System.Windows.Forms.Padding(2);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(115, 23);
-            this.button2.TabIndex = 24;
-            this.button2.Text = "&Fix Attributes";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
-            // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(134, 26);
-            this.button3.Margin = new System.Windows.Forms.Padding(2);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(115, 23);
-            this.button3.TabIndex = 26;
-            this.button3.Text = "&Re-order";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
-            // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.groupBox5);
-            this.tabPage3.Controls.Add(this.chkNotToggle);
-            this.tabPage3.Controls.Add(this.groupBox4);
-            this.tabPage3.Controls.Add(this.radioButton10);
-            this.tabPage3.Controls.Add(this.groupBox3);
-            this.tabPage3.Controls.Add(this.radioToggleBri);
-            this.tabPage3.Controls.Add(this.radioButton9);
-            this.tabPage3.Controls.Add(this.radioButton8);
-            this.tabPage3.Controls.Add(this.radioButton7);
-            this.tabPage3.Controls.Add(this.button24);
-            this.tabPage3.Controls.Add(this.radioButton3);
-            this.tabPage3.Controls.Add(this.radioButton4);
-            this.tabPage3.Controls.Add(this.pictureBox2);
-            this.tabPage3.Controls.Add(this.radioButton6);
-            this.tabPage3.Controls.Add(this.button14);
-            this.tabPage3.Controls.Add(this.label18);
-            this.tabPage3.Controls.Add(this.textBMP);
-            this.tabPage3.Controls.Add(this.radioButton5);
-            this.tabPage3.Controls.Add(this.radioButton1);
-            this.tabPage3.Controls.Add(this.radioButton2);
-            this.tabPage3.Location = new System.Drawing.Point(4, 40);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(281, 528);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Edit";
-            this.tabPage3.UseVisualStyleBackColor = true;
-            // 
             // chkNotToggle
             // 
             this.chkNotToggle.AutoSize = true;
-            this.chkNotToggle.Location = new System.Drawing.Point(159, 241);
+            this.chkNotToggle.Location = new System.Drawing.Point(159, 307);
             this.chkNotToggle.Name = "chkNotToggle";
             this.chkNotToggle.Size = new System.Drawing.Size(88, 17);
             this.chkNotToggle.TabIndex = 36;
@@ -659,39 +662,31 @@
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.textBox13);
-            this.groupBox4.Controls.Add(this.label5);
-            this.groupBox4.Location = new System.Drawing.Point(182, 113);
+            this.groupBox4.Location = new System.Drawing.Point(7, 330);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(86, 138);
+            this.groupBox4.Size = new System.Drawing.Size(261, 72);
             this.groupBox4.TabIndex = 35;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Visible = false;
+            this.groupBox4.Text = "Tool help";
+            this.groupBox4.Visible = true;
             // 
             // textBox13
             // 
             this.textBox13.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox13.Enabled = false;
-            this.textBox13.Location = new System.Drawing.Point(9, 11);
+            this.textBox13.BackColor = System.Drawing.SystemColors.Control;
+            this.textBox13.Location = new System.Drawing.Point(9, 17);
             this.textBox13.Multiline = true;
             this.textBox13.Name = "textBox13";
-            this.textBox13.Size = new System.Drawing.Size(68, 113);
+            this.textBox13.ReadOnly = true;
+            this.textBox13.Size = new System.Drawing.Size(246, 49);
             this.textBox13.TabIndex = 0;
-            this.textBox13.Text = "Left click, right click, middle click\r\n\r\nPress and hold shift  to check swap temp" +
-    "orarily";
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(206, 11);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(29, 13);
-            this.label5.TabIndex = 9;
-            this.label5.Text = "Help";
+            this.textBox13.TabStop = false;
+            this.textBox13.Text = "Left: pick the cell's colors and raster.\r\nShift + drag: select a conversion area.";
             // 
             // radioButton10
             // 
             this.radioButton10.AutoSize = true;
-            this.radioButton10.Location = new System.Drawing.Point(11, 241);
+            this.radioButton10.Location = new System.Drawing.Point(10, 307);
             this.radioButton10.Name = "radioButton10";
             this.radioButton10.Size = new System.Drawing.Size(145, 17);
             this.radioButton10.TabIndex = 34;
@@ -702,6 +697,7 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.checkMark2);
             this.groupBox3.Controls.Add(this.button21);
             this.groupBox3.Controls.Add(this.button17);
             this.groupBox3.Controls.Add(this.button16);
@@ -713,6 +709,19 @@
             this.groupBox3.TabIndex = 33;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Quick Operations";
+            // 
+            // checkMark2
+            // 
+            this.checkMark2.AutoSize = true;
+            this.checkMark2.Checked = true;
+            this.checkMark2.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkMark2.Location = new System.Drawing.Point(147, 23);
+            this.checkMark2.Name = "checkMark2";
+            this.checkMark2.Size = new System.Drawing.Size(109, 17);
+            this.checkMark2.TabIndex = 37;
+            this.checkMark2.Text = "Mark Mismatches";
+            this.checkMark2.UseVisualStyleBackColor = true;
+            this.checkMark2.CheckedChanged += new System.EventHandler(this.checkMark2_CheckedChanged);
             // 
             // button21
             // 
@@ -767,7 +776,7 @@
             // radioToggleBri
             // 
             this.radioToggleBri.AutoSize = true;
-            this.radioToggleBri.Location = new System.Drawing.Point(10, 82);
+            this.radioToggleBri.Location = new System.Drawing.Point(10, 149);
             this.radioToggleBri.Name = "radioToggleBri";
             this.radioToggleBri.Size = new System.Drawing.Size(88, 17);
             this.radioToggleBri.TabIndex = 32;
@@ -778,7 +787,7 @@
             // radioButton9
             // 
             this.radioButton9.AutoSize = true;
-            this.radioButton9.Location = new System.Drawing.Point(10, 149);
+            this.radioButton9.Location = new System.Drawing.Point(10, 216);
             this.radioButton9.Name = "radioButton9";
             this.radioButton9.Size = new System.Drawing.Size(171, 17);
             this.radioButton9.TabIndex = 31;
@@ -789,7 +798,7 @@
             // radioButton8
             // 
             this.radioButton8.AutoSize = true;
-            this.radioButton8.Location = new System.Drawing.Point(10, 174);
+            this.radioButton8.Location = new System.Drawing.Point(10, 240);
             this.radioButton8.Name = "radioButton8";
             this.radioButton8.Size = new System.Drawing.Size(169, 17);
             this.radioButton8.TabIndex = 30;
@@ -799,7 +808,7 @@
             // radioButton7
             // 
             this.radioButton7.AutoSize = true;
-            this.radioButton7.Location = new System.Drawing.Point(11, 197);
+            this.radioButton7.Location = new System.Drawing.Point(10, 263);
             this.radioButton7.Name = "radioButton7";
             this.radioButton7.Size = new System.Drawing.Size(126, 17);
             this.radioButton7.TabIndex = 29;
@@ -894,7 +903,7 @@
             // radioButton5
             // 
             this.radioButton5.AutoSize = true;
-            this.radioButton5.Location = new System.Drawing.Point(11, 220);
+            this.radioButton5.Location = new System.Drawing.Point(10, 286);
             this.radioButton5.Name = "radioButton5";
             this.radioButton5.Size = new System.Drawing.Size(145, 17);
             this.radioButton5.TabIndex = 20;
@@ -906,7 +915,7 @@
             // radioButton1
             // 
             this.radioButton1.AutoSize = true;
-            this.radioButton1.Location = new System.Drawing.Point(11, 36);
+            this.radioButton1.Location = new System.Drawing.Point(10, 36);
             this.radioButton1.Name = "radioButton1";
             this.radioButton1.Size = new System.Drawing.Size(76, 17);
             this.radioButton1.TabIndex = 17;
@@ -917,7 +926,7 @@
             // radioButton2
             // 
             this.radioButton2.AutoSize = true;
-            this.radioButton2.Location = new System.Drawing.Point(11, 58);
+            this.radioButton2.Location = new System.Drawing.Point(10, 58);
             this.radioButton2.Name = "radioButton2";
             this.radioButton2.Size = new System.Drawing.Size(82, 17);
             this.radioButton2.TabIndex = 18;
@@ -926,6 +935,7 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.checkBoxCompressCode);
             this.tabPage2.Controls.Add(this.chkUseBank7);
             this.tabPage2.Controls.Add(this.chkUseLoop);
             this.tabPage2.Controls.Add(this.comboBox5);
@@ -952,6 +962,18 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Gen Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // checkBoxCompressCode
+            // 
+            this.checkBoxCompressCode.AutoSize = true;
+            this.checkBoxCompressCode.Location = new System.Drawing.Point(168, 115);
+            this.checkBoxCompressCode.Name = "checkBoxCompressCode";
+            this.checkBoxCompressCode.Size = new System.Drawing.Size(100, 17);
+            this.checkBoxCompressCode.TabIndex = 52;
+            this.checkBoxCompressCode.Text = "Compress Code";
+            this.toolTip1.SetToolTip(this.checkBoxCompressCode, "ZX0 compresses code, attributes and bitmap together. Requires zx0.exe and pasmo.e" +
+        "xe; overrides bitmap compression selection.");
+            this.checkBoxCompressCode.UseVisualStyleBackColor = true;
             // 
             // chkUseBank7
             // 
@@ -981,9 +1003,7 @@
             this.comboBox5.FormattingEnabled = true;
             this.comboBox5.Items.AddRange(new object[] {
             "none",
-            "zx0",
-            "zx7",
-            "mlz"});
+            "zx0"});
             this.comboBox5.Location = new System.Drawing.Point(199, 87);
             this.comboBox5.Name = "comboBox5";
             this.comboBox5.Size = new System.Drawing.Size(76, 21);
@@ -1001,7 +1021,7 @@
             // button25
             // 
             this.button25.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button25.Location = new System.Drawing.Point(5, 781);
+            this.button25.Location = new System.Drawing.Point(5, 799);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(112, 23);
             this.button25.TabIndex = 15;
@@ -1025,7 +1045,7 @@
             // button6
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.Location = new System.Drawing.Point(182, 781);
+            this.button6.Location = new System.Drawing.Point(182, 799);
             this.button6.Name = "button6";
             this.button6.Size = new System.Drawing.Size(93, 23);
             this.button6.TabIndex = 2;
@@ -1135,7 +1155,7 @@
             // button11
             // 
             this.button11.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button11.Location = new System.Drawing.Point(123, 781);
+            this.button11.Location = new System.Drawing.Point(123, 799);
             this.button11.Name = "button11";
             this.button11.Size = new System.Drawing.Size(53, 23);
             this.button11.TabIndex = 14;
@@ -1147,9 +1167,9 @@
             // 
             this.button10.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button10.Location = new System.Drawing.Point(146, 114);
+            this.button10.Location = new System.Drawing.Point(9, 138);
             this.button10.Name = "button10";
-            this.button10.Size = new System.Drawing.Size(129, 23);
+            this.button10.Size = new System.Drawing.Size(266, 23);
             this.button10.TabIndex = 13;
             this.button10.Text = "Regenerate (n)";
             this.button10.UseVisualStyleBackColor = true;
@@ -1160,12 +1180,12 @@
             this.textBox7.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox7.Location = new System.Drawing.Point(5, 143);
+            this.textBox7.Location = new System.Drawing.Point(6, 167);
             this.textBox7.MaxLength = 999000;
             this.textBox7.Multiline = true;
             this.textBox7.Name = "textBox7";
             this.textBox7.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox7.Size = new System.Drawing.Size(268, 632);
+            this.textBox7.Size = new System.Drawing.Size(268, 373);
             this.textBox7.TabIndex = 12;
             this.textBox7.MouseClick += new System.Windows.Forms.MouseEventHandler(this.textBox7_MouseClick);
             // 
@@ -1395,7 +1415,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(3, 302);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(188, 485);
+            this.listBox1.Size = new System.Drawing.Size(188, 498);
             this.listBox1.TabIndex = 16;
             this.listBox1.Visible = false;
             // 
@@ -2178,17 +2198,6 @@
             this.columnHeader3.Text = "Cycle";
             this.columnHeader3.Width = 120;
             // 
-            // textMegaLZ
-            // 
-            this.textMegaLZ.Location = new System.Drawing.Point(369, 63);
-            this.textMegaLZ.Multiline = true;
-            this.textMegaLZ.Name = "textMegaLZ";
-            this.textMegaLZ.Size = new System.Drawing.Size(248, 355);
-            this.textMegaLZ.TabIndex = 14;
-            this.textMegaLZ.Text = resources.GetString("textMegaLZ.Text");
-            this.textMegaLZ.Visible = false;
-            this.textMegaLZ.TextChanged += new System.EventHandler(this.textMegaLZ_TextChanged);
-            // 
             // timer1
             // 
             this.timer1.Interval = 500;
@@ -2470,16 +2479,6 @@
             this.usageToolStripMenuItem.Text = "Usage";
             this.usageToolStripMenuItem.Click += new System.EventHandler(this.usageToolStripMenuItem_Click);
             // 
-            // textZX7
-            // 
-            this.textZX7.Location = new System.Drawing.Point(509, 27);
-            this.textZX7.Multiline = true;
-            this.textZX7.Name = "textZX7";
-            this.textZX7.Size = new System.Drawing.Size(121, 95);
-            this.textZX7.TabIndex = 15;
-            this.textZX7.Text = resources.GetString("textZX7.Text");
-            this.textZX7.Visible = false;
-            // 
             // txtZX0
             // 
             this.txtZX0.Location = new System.Drawing.Point(24, 63);
@@ -2489,6 +2488,28 @@
             this.txtZX0.TabIndex = 16;
             this.txtZX0.Text = resources.GetString("txtZX0.Text");
             this.txtZX0.Visible = false;
+            // 
+            // radioButton11
+            // 
+            this.radioButton11.AutoSize = true;
+            this.radioButton11.Location = new System.Drawing.Point(10, 172);
+            this.radioButton11.Name = "radioButton11";
+            this.radioButton11.Size = new System.Drawing.Size(113, 17);
+            this.radioButton11.TabIndex = 37;
+            this.radioButton11.TabStop = true;
+            this.radioButton11.Text = "Toggle Bits (invert)";
+            this.radioButton11.UseVisualStyleBackColor = true;
+            // 
+            // radioButton12
+            // 
+            this.radioButton12.AutoSize = true;
+            this.radioButton12.Location = new System.Drawing.Point(10, 81);
+            this.radioButton12.Name = "radioButton12";
+            this.radioButton12.Size = new System.Drawing.Size(89, 17);
+            this.radioButton12.TabIndex = 38;
+            this.radioButton12.TabStop = true;
+            this.radioButton12.Text = "Rotate Colors";
+            this.radioButton12.UseVisualStyleBackColor = true;
             // 
             // rangeSliderNet45
             // 
@@ -2570,9 +2591,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(948, 755);
-            this.Controls.Add(this.textMegaLZ);
             this.Controls.Add(this.txtZX0);
-            this.Controls.Add(this.textZX7);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.menuStrip1);
@@ -2593,14 +2612,15 @@
             this.panel2.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabFix.ResumeLayout(false);
-            this.groupBox5.ResumeLayout(false);
-            this.groupBox5.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
             this.tabPage3.PerformLayout();
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox5.PerformLayout();
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.groupBox3.ResumeLayout(false);
+            this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).EndInit();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
@@ -2636,7 +2656,6 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TextBox textBox6;
-        private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox textBox5;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox textBox4;
@@ -2727,7 +2746,6 @@
         private System.Windows.Forms.Label label24;
         private System.Windows.Forms.ComboBox comboBox3;
         private System.Windows.Forms.CheckBox checkKEY;
-        private System.Windows.Forms.TextBox textMegaLZ;
         private System.Windows.Forms.CheckBox checkLINE;
         private System.Windows.Forms.CheckBox chkShowAttribs;
         private System.Windows.Forms.Button button25;
@@ -2764,7 +2782,6 @@
         private System.Windows.Forms.TextBox textBox9;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.ComboBox comboBox4;
-        private System.Windows.Forms.TextBox textZX7;
         private System.Windows.Forms.Label label20;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.RadioButton radioButton8;
@@ -2847,6 +2864,10 @@
         private System.Windows.Forms.Button button21;
         private System.Windows.Forms.TextBox textBox15;
         private System.Windows.Forms.Button button22;
+        private System.Windows.Forms.CheckBox checkBoxCompressCode;
+        private System.Windows.Forms.CheckBox checkMark2;
+        private System.Windows.Forms.RadioButton radioButton12;
+        private System.Windows.Forms.RadioButton radioButton11;
     }
 }
 

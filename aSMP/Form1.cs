@@ -144,6 +144,8 @@ namespace aSMP
         List<Point> brightnessStrokeDirty = new List<Point>();
         int brightnessStrokeLastX = -1;
         int brightnessStrokeLastY = -1;
+        bool[,] colorsRotatedInStroke = new bool[32, 192];
+        bool[,] bitsToggledInStroke = new bool[32, 192];
         bool rasterInfoPickArmed = false;
         bool rasterInfoPicked = false;
 
@@ -211,8 +213,49 @@ namespace aSMP
         public Form1()
         {
             InitializeComponent();
+            foreach (Control control in tabPage3.Controls)
+            {
+                RadioButton tool = control as RadioButton;
+                if (tool != null) tool.CheckedChanged += EditTool_CheckedChanged;
+            }
+            UpdateEditToolHelp();
+        }
 
+        private void EditTool_CheckedChanged(object sender, EventArgs e)
+        {
+            RadioButton tool = sender as RadioButton;
+            if (tool != null && tool.Checked) UpdateEditToolHelp();
+        }
 
+        private void UpdateEditToolHelp()
+        {
+            groupBox4.Visible = true;
+            if (radioButton6.Checked)
+                textBox13.Text = "Left: draw pixels. Right: erase pixels.\r\nColors stay unchanged.";
+            else if (radioButton1.Checked)
+                textBox13.Text = "Left: apply the selected INK/PAPER/BRIGHT.\r\nRight: clear the MLT processing mark.";
+            else if (radioButton2.Checked)
+                textBox13.Text = "Left: draw pixels and apply palette colors.\r\nRight: clear the MLT processing mark.";
+            else if (radioButton12.Checked)
+                textBox13.Text = "Left: INK +1. Right: INK -1 (0-7).\r\nHold Shift: change PAPER. BRIGHT is kept.";
+            else if (radioButton3.Checked)
+                textBox13.Text = "Left: pick the cell's colors and raster.\r\nShift + drag: select a conversion area.";
+            else if (radioButton4.Checked)
+                textBox13.Text = "Left + drag: move the image view.\r\nAlt + drag works with any tool.";
+            else if (radioToggleBri.Checked)
+                textBox13.Text = "Left + drag: toggle BRIGHT once per cell.\r\nINK and PAPER stay unchanged.";
+            else if (radioButton11.Checked)
+                textBox13.Text = "Left + drag: invert all 8 bits per cell.\r\nColors stay unchanged. Click again to undo.";
+            else if (radioButton9.Checked)
+                textBox13.Text = "Left: copy colors from the raster above.\r\nBitmap data stays unchanged.";
+            else if (radioButton8.Checked)
+                textBox13.Text = "Left: copy colors from the raster below.\r\nShift: try copying with bitmap correction.";
+            else if (radioButton7.Checked)
+                textBox13.Text = "Left: mark this cell for MLT processing.\r\nRight: remove its MLT processing mark.";
+            else if (radioButton5.Checked)
+                textBox13.Text = "Left: use MLT. Right: use the SCR buffer.\r\nMiddle: toggle the whole 8 x 8 block.";
+            else if (radioButton10.Checked)
+                textBox13.Text = "Left/middle: swap or copy an 8 x 1 cell.\r\nHold Shift: preview the SWAP buffer.";
         }
 
         // SCREEN UPDATE -------------------------------------------------------------------------------------
@@ -750,6 +793,12 @@ namespace aSMP
 
         private void setpalet(int m)
         {
+            // Keep palette editing state in sync with the picked attribute.
+            rgm = m;
+            ink = m & 7;
+            paper = (m >> 3) & 7;
+            bright = (m >> 6) & 1;
+
             // draw palette
             Graphics P = Graphics.FromImage(palet2);
 
@@ -1131,8 +1180,13 @@ namespace aSMP
             }
             if (mB != 0)
             {
+                if (radioButton12.Checked && (mB == 1 || mB == 2))
+                {
+                    RotateCellColors(cx, cy, mB == 1 ? 1 : -1,
+                        (Control.ModifierKeys & Keys.Shift) == Keys.Shift);
+                }
                 // MB1------------------------------------------------------------------------------- Mouse Button Handle
-                if (mB == 1)
+                if (mB == 1 && !radioButton12.Checked)
                 {
 
                     textBMP.Text = Convert.ToString(bmp[cx, cy], 2).PadLeft(8, '0');
@@ -1146,6 +1200,15 @@ namespace aSMP
                         if (radioButton7.Checked)
                         {
                             chex[cx, cy] = 1;
+                        }
+                        else if (radioButton11.Checked)
+                        {
+                            if (!bitsToggledInStroke[cx, cy])
+                            {
+                                bitsToggledInStroke[cx, cy] = true;
+                                bmp[cx, cy] ^= 0xFF;
+                            }
+                            textBMP.Text = Convert.ToString(bmp[cx, cy], 2).PadLeft(8, '0');
                         }
                         else if (radioButton5.Checked)
                         {
@@ -1247,7 +1310,7 @@ namespace aSMP
 
 
                 //MB2 -------------------------------------------------------------------------------
-                if (mB == 2)
+                if (mB == 2 && !radioButton12.Checked && !radioButton11.Checked)
                 {
                     if (radioButton7.Checked)
                     {
@@ -1291,7 +1354,7 @@ namespace aSMP
                 }
 
                 //MB4 (middle mouse) -----------------------------------------------------------------------
-                if (mB == 4)
+                if (mB == 4 && !radioButton12.Checked && !radioButton11.Checked)
                 {
                     if (radioButton5.Checked )
                     {
@@ -2318,6 +2381,20 @@ namespace aSMP
             brightnessStrokeLastY = y;
         }
 
+        private void RotateCellColors(int x, int y, int delta, bool rotatePaper)
+        {
+            if (colorsRotatedInStroke[x, y]) return;
+            colorsRotatedInStroke[x, y] = true;
+
+            int shift = rotatePaper ? 3 : 0;
+            int mask = 7 << shift;
+            int value = mlt[x, y];
+            int color = (value >> shift) & 7;
+            int nextColor = Math.Max(0, Math.Min(7, color + delta));
+            // Replace only the chosen color bits, preserving BRIGHT and FLASH.
+            mlt[x, y] = (value & ~mask) | (nextColor << shift);
+        }
+
         private void EndBrightnessStroke()
         {
             brightnessStrokeLastX = -1;
@@ -3323,6 +3400,9 @@ namespace aSMP
             return blc + "  0" + sort;
         }
 
+        private string lastPackedSource = "";
+        private string lastRasterSource = "";
+
         private string generatecode()
         {
 
@@ -3347,44 +3427,19 @@ namespace aSMP
             }
 
 
-            /*
-            //copy/depack bitmap
-            if (radioMlz.Checked)
+            if (!checkBoxCompressCode.Checked)
             {
-                code += ";MegaLZ Depacking\r\n" + textMegaLZ.Text + "\r\n";
-            }
-            else if (radioZx7.Checked)
-            {
-                code += ";ZX7 Depacking\r\n" + textZX7.Text + "\r\n";
-            }
-            else if (radiozx0.Checked)
-            {
-                code += ";ZX0 Depacking\r\n" + txtZX0.Text + "\r\n";
-            }
-            else
-            {
-                code += "LD HL,bitmap\r\nLD DE,16384\r\nLD BC,6144\r\nLDIR\r\n";
-            }*/
-
-            switch (comboBox5.SelectedIndex)
-            {
-                case 1: // zx0
+                if (comboBox5.SelectedIndex == 1)
                     code += ";ZX0 Depacking\r\n" + txtZX0.Text + "\r\n";
-                    break;
-                case 2: // zx7
-                    code += ";ZX7 Depacking\r\n" + textZX7.Text + "\r\n";
-                    break;
-                case 3: // mlz
-                    code += ";MegaLZ Depacking\r\n" + textMegaLZ.Text + "\r\n";
-                    break;
-                default: // none
+                else
                     code += "LD HL,bitmap\r\nLD DE,16384\r\nLD BC,6144\r\nLDIR\r\n";
-                    break;
             }
-
 
             //setup interrupt
-            code += "\r\ngoraster:\r\n;setup interrupt\r\n \r\nld hl,65021\r\nld (hl),201\r\nld   hl,65024\r\nld   de,65025\r\nld   (hl),253\r\nld   b,e\r\nld   c,e\r\nldir\r\nld   a,254\r\nld   i,a\r\nim   2\r\n";
+            code += "\r\ngoraster:\r\n";
+            if (checkBoxCompressCode.Checked)
+                code += "LD HL,bitmap\r\nLD DE,16384\r\nLD BC,6144\r\nLDIR\r\n";
+            code += ";setup interrupt\r\n \r\nld hl,65021\r\nld (hl),201\r\nld   hl,65024\r\nld   de,65025\r\nld   (hl),253\r\nld   b,e\r\nld   c,e\r\nldir\r\nld   a,254\r\nld   i,a\r\nim   2\r\n";
 
             if (comboBox3.SelectedIndex > 0)
             {
@@ -3484,7 +3539,12 @@ namespace aSMP
 
             code += "\r\nend 32768";
 
-            return code;
+            string output = checkBoxCompressCode.Checked
+                ? Zx0Package.Build(code, txtZX0.Text, Application.StartupPath, checkKEY.Checked)
+                : code;
+            lastRasterSource = code;
+            lastPackedSource = checkBoxCompressCode.Checked ? output : "";
+            return output;
 
         }
 
@@ -3506,54 +3566,10 @@ namespace aSMP
 
 
             
-            /*obsolete code 
-            if (radioMlz.Checked || radioZx7.Checked || radiozx0.Checked)
+            if (!checkBoxCompressCode.Checked && comboBox5.SelectedIndex == 1)
             {
-                string filenom="\\packed.bin";
-                if (radioMlz.Checked) { runLZ(); }
-                if (radioZx7.Checked) { runzx7();  }
-                if (radiozx0.Checked) { runZX0();  }
-              */
-  
-            // Now pack data
-            if (comboBox5.SelectedIndex == 1 || comboBox5.SelectedIndex == 2 || comboBox5.SelectedIndex == 3)
-            {
-                string filenom = "\\packed.bin";
-                if (comboBox5.SelectedIndex == 3) { runLZ(); }
-                if (comboBox5.SelectedIndex == 2) { runzx7(); }
-                if (comboBox5.SelectedIndex == 1) { runZX0(); }
-                
-
-                BinaryReader b = new BinaryReader(File.Open(Application.StartupPath + filenom, FileMode.Open));
-                // 2.
-                // Position and length variables.
-
-                // Use BaseStream.
-                int length = (int)b.BaseStream.Length;
-                byte[] array = new byte[length];
-                int n = b.BaseStream.Read(array, 0, length);
-
-
-
-                int cnt = 0;
-                defb += ";Len:" + array.Length + "\r\n";
-                // Loop through contents of the array.
-                foreach (byte element in array)
-                {
-                    if (cnt == 0)
-                    {
-                        defb = defb.TrimEnd(',');
-                        defb += "\r\n";
-                        defb += "defb ";
-                    }
-
-                    defb += "#" + dectohex(element) + ",";
-
-                    cnt++;
-                    cnt = cnt > 32 ? 0 : cnt;
-                }
-                defb = defb.TrimEnd(',');
-                defb += "\r\n";
+                byte[] packed = Zx0Package.Compress(packbitmap(), Application.StartupPath);
+                defb += ";Len:" + packed.Length + "\r\n" + Zx0Package.Bytes(packed);
             }
             else
             {
@@ -3677,7 +3693,6 @@ namespace aSMP
 
                     lts = ts + (it - t);
                     string tempcode = "ld sp," + lts + "\r\n";
-                    //string tempcode = "ld sp,12593\r\n"; //to make it megaLZ compatible 
                     code += tempcode;
                     execop(tempcode, 0);
                     t = t - 10;
@@ -4083,103 +4098,6 @@ namespace aSMP
 
         }
 
-
-        private void runLZ()
-        {
-            if (File.Exists("packed.bin"))
-            {
-                File.Delete("packed.bin");
-            }
-            string filename = "lazarus.bits";
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-            byte[] f = packbitmap();
-            export(filename, f);
-
-            // Start the child process.
-            System.Diagnostics.Process p = new System.Diagnostics.Process();
-
-            // Redirect the output stream of the child process.
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.FileName = Application.StartupPath + "\\megalz.exe";
-            p.StartInfo.Arguments = "lazarus.bits packed.bin";
-            //p.StartInfo.UseShellExecute = true;
-            p.StartInfo.CreateNoWindow = true;
-
-            p.Start();
-
-            p.WaitForExit();
-
-
-        }
-
-        private void runZX0()
-        {
-            if (File.Exists("packed.bin"))
-            {
-                File.Delete("packed.bin");
-            }
-
-            string filename = "lazarus.bits";
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-            byte[] f = packbitmap();
-            export(filename, f);
-
-            // Start the child process.
-            System.Diagnostics.Process p = new System.Diagnostics.Process();
-
-            // Redirect the output stream of the child process.
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.FileName = Application.StartupPath + "\\zx0.exe";
-            p.StartInfo.Arguments = "-f lazarus.bits packed.bin";
-            //p.StartInfo.UseShellExecute = true;
-            p.StartInfo.CreateNoWindow = true;
-
-            p.Start();
-
-            p.WaitForExit();
-
-
-        }
-
-        private void runzx7()
-        {
-            if (File.Exists("packed.bin"))
-            {
-                File.Delete("packed.bin");
-            }
-            string filename = "lazarus.bits";
-            if (File.Exists(filename))
-            {
-                File.Delete(filename);
-            }
-            byte[] f = packbitmap();
-            export(filename, f);
-
-            // Start the child process.
-            System.Diagnostics.Process p = new System.Diagnostics.Process();
-
-            // Redirect the output stream of the child process.
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.FileName = Application.StartupPath + "\\zx7.exe";
-            p.StartInfo.Arguments = "lazarus.bits packed.bin";
-            //p.StartInfo.UseShellExecute = true;
-            p.StartInfo.CreateNoWindow = true;
-
-            p.Start();
-
-            p.WaitForExit();
-
-
-        }
 
         private void export(string filename, byte[] f)
         {
@@ -5235,6 +5153,7 @@ namespace aSMP
                 code = textBox7.Text;
                 
             }
+            if (code.Length > 0 && code == lastPackedSource) code = lastRasterSource;
             bool brake=false;
             int lineIndex = 0;
             using (StringReader reader = new StringReader(code))
@@ -5403,30 +5322,6 @@ namespace aSMP
             }
 
             
-            test = new FileInfo(Application.StartupPath + "\\zx7.exe");
-            if (test.Exists)
-            {
-                comboBox5.Items.Add("zx7");
-                if (comboBox5.SelectedIndex == 0) comboBox5.SelectedIndex = 2;
-            }
-            else
-            {
-                comboBox5.Items.Add("zx7 not found");
-            }
-
-            test = new FileInfo(Application.StartupPath + "\\MegaLZ.exe");
-            if (test.Exists)
-            {
-                comboBox5.Items.Add("mlz");
-                if (comboBox5.SelectedIndex == 0) comboBox5.SelectedIndex = 3;
-            }
-            else
-            {
-                comboBox5.Items.Add("mlz not found");
-            }
-
-
-
             int hival = 235;
             int lowval = 202;
 
@@ -5774,8 +5669,9 @@ namespace aSMP
                 return;
             }
 
-            // Enter selection mode while the SHIFT key is pressed
-            if ((Control.ModifierKeys & Keys.Shift) == Keys.Shift)
+            // Shift + left drag selects an area only with the Pick tool.
+            if (radioButton3.Checked && e.Button == MouseButtons.Left &&
+                (Control.ModifierKeys & Keys.Shift) == Keys.Shift)
             {
                 isSelectionActive = true;
                 hasValidSelection = false;
@@ -5785,6 +5681,15 @@ namespace aSMP
             }
             else
             {
+                if (radioButton11.Checked && e.Button == MouseButtons.Left)
+                {
+                    Array.Clear(bitsToggledInStroke, 0, bitsToggledInStroke.Length);
+                }
+                if (radioButton12.Checked &&
+                    (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right))
+                {
+                    Array.Clear(colorsRotatedInStroke, 0, colorsRotatedInStroke.Length);
+                }
                 // Keep your existing painting/cursor logic here
                 if (e.Button == MouseButtons.Left && radioToggleBri.Checked)
                 {
@@ -5851,9 +5756,19 @@ namespace aSMP
             if (Convert.ToInt32(textBOTTOM.Text) < 0) textBOTTOM.Text = "0";
 
             button10.Enabled = false;
-            textBox7.Text = generatecode();
-            btnLoadBalance.Enabled = textBox7.Text.Length > 0;
-            button10.Enabled = true;
+            button10.Text = "Please Wait...";    
+            try
+            {
+                textBox7.Text = generatecode();
+                btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+            }
+            catch (Exception ex)
+            {
+                textBox7.Clear();
+                btnLoadBalance.Enabled = false;
+                MessageBox.Show(ex.Message, "Code generation failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally { button10.Enabled = true; button10.Text = "Regenerate"; }
 
         }
 
@@ -6651,7 +6566,7 @@ namespace aSMP
 This tool analyzes a MLT file to generate an raster chasing assembly code to spread multicolor cells around the screen for optimal viewing.
 
 INSTALL
-- Put zx0, dzx0, zx7, MegaLZ.exe and Pasmo.exe into the same directory as asmp.exe (optional).
+- Put zx0.exe and Pasmo.exe into the same directory as asmp.exe (optional).
 
 USAGE (MLT files only)
 1. File > Open... to select a progressive MLT file (12288 bytes).
@@ -6704,13 +6619,7 @@ TIPS
 
         private void usageToolStripMenuItem_Click2(object sender, EventArgs e)
         {
-            /*string msg = "INSTALL\r\nPut MegaLZ.exe and Pasmo.exe into same directory with asmp.exe (optional)\r\n\r\n USAGE\r\n *** This tool only converts MLT files! ***\r\n\r\n";
-            msg = msg + "\r\n 1.File > Open... to select a progressive MLT file (12288 bytes)\r\n 2.Switch to Edit & Fix tab\r\n 3.Click fix attrs and Re-order buttons to optimize image (you will see nothing changed but they work)";
-            msg = msg + "\r\n 3.Switch to code tab. Select your target platform for best results. \r\n 4.Press regenerate button. The code will appear.\r\n 5.Press copy code, and code will be copied into clipboard. \r\n 6. Compile the code with pasmo the assembler and run it in your favorite machine.";
-            msg = msg + "\r\n\r\n -- You can preview results in DEBUG tab:  Just click Start emulation to see the end result.";
-            msg = msg + "\r\n -- You can fine tune the images or edit: Use Edit & Fix tab.";
-            msg = msg + "\r\n -- Use Preferences to hide grid, mlt marks or other helpful polluters.";
-            msg = msg + "\r\n -- Use Spacebar to drag image, use zoom option to move closer to the image";*/
+
             MessageBox.Show(textBox9.Text , "Welcome");
 
         }
@@ -6721,11 +6630,6 @@ TIPS
             textBox4.Text = codes[comboBox4.SelectedIndex];
         }
 
-
-        private void textMegaLZ_TextChanged(object sender, EventArgs e)
-        {
-
-        }
 
         private void atrributesToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -6760,6 +6664,7 @@ TIPS
 
         private void checkMARK_CheckedChanged(object sender, EventArgs e)
         {
+            checkMark2.Checked = checkMARK.Checked;
             button21.Enabled = checkMARK.Checked && mismatchPreviewValid && lastcomputedmarks;
             if (!button21.Enabled) button21.Text = "Toggle Mismatches";
             if (lastcomputedmarks) setup();
@@ -6871,8 +6776,7 @@ TIPS
                 {
                     lastcomputedmarks = false;
                     ClearMismatchPreview();
-                    textBox7.Text = generatecode();
-                    btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+                    regenerate();
                 }
 
                 setup();
@@ -6889,8 +6793,7 @@ TIPS
             {
                 lastcomputedmarks = false;
                 ClearMismatchPreview();
-                textBox7.Text = generatecode();
-                btnLoadBalance.Enabled = textBox7.Text.Length > 0;
+                regenerate();
             }
 
             setup(); // refresh the screen
@@ -7492,6 +7395,11 @@ TIPS
             pictureBox1.Image = buffy;
         }
 
+        private void checkMark2_CheckedChanged(object sender, EventArgs e)
+        {
+            checkMARK.Checked = checkMark2.Checked;
+        }
+
         private void button22_Click_1(object sender, EventArgs e)
         {
             if (!IsRasterInfoTabActive()) return;
@@ -7649,12 +7557,11 @@ TIPS
 
         private void radioButton10_CheckedChanged(object sender, EventArgs e)
         {
-            groupBox4.Visible = radioButton10.Checked;
+            if (!radioButton10.Checked && pictSpare != null) DisposeSwap();
         }
 
         private void radioButton5_CheckedChanged(object sender, EventArgs e)
         {
-            groupBox4.Visible = radioButton5.Checked;
         }
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {

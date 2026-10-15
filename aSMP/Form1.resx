@@ -144,9 +144,8 @@ Important:
 To generate TAP output, you need following free programs:
 pasmo.exe
 
-To compress the bitmap portion (saves about 3-4kb):
-MegaLZ.exe (faster)
-Zx0.exe (better)
+To compress the bitmap: zx0.exe
+For Compress Code (code, attributes and bitmap): zx0.exe and pasmo.exe
 
 
 editing a picture:
@@ -198,90 +197,6 @@ Not to be sold in anyway - You cannot include this software in any compilation w
 This program can destroy your computer! Author helds no responsibility for damages caused by this piece of software.
 </value>
   </data>
-  <data name="textMegaLZ.Text" xml:space="preserve">
-    <value>ld hl,bitmap
-ld de,16384
-call dec40
-jp goraster
-
-dec40
-        ld      a,#80
-        ex      af,af'
-ms      ldi
-m0      ld      bc,#2ff
-m1      ex      af,af'
-m1x     add     a,a
-        jr      nz,m2
-        ld      a,(hl)
-        inc     hl
-        rla
-m2      rl      c
-        jr      nc,m1x
-        ex      af,af'
-        djnz    x2
-        ld      a,2
-        sra     c
-        jr      c,n1
-        inc     a
-        inc     c
-        jr      z,n2
-        ld      bc,#33f
-        jr      m1
-
-x2      djnz    x3
-        srl     c
-        jr      c,ms
-        inc     b
-        jr      m1
-x6
-        add     a,c
-n2
-        ld      bc,#4ff
-        jr      m1
-n1
-        inc     c
-        jr      nz,m4
-        ex      af,af'
-        inc     b
-n5      rr      c
-        jp c, mEnd
-        rl      b
-        add     a,a
-        jr      nz,n6
-        ld      a,(hl)
-        inc     hl
-        rla
-n6      jr      nc,n5
-        ex      af,af'
-        add     a,b
-        ld      b,6
-        jr      m1
-x3
-        djnz    x4
-        ld      a,1
-        jr      m3
-x4      djnz    x5
-        inc     c
-        jr      nz,m4
-        ld      bc,#51f
-        jr      m1
-x5
-        djnz    x6
-        ld      b,c
-m4      ld      c,(hl)
-        inc     hl
-m3      dec     b
-        push    hl
-        ld      l,c
-        ld      h,b
-        add     hl,de
-        ld      c,a
-        ld      b,0
-        ldir
-        pop     hl
-        jr      m0
-mEnd      ret</value>
-  </data>
   <metadata name="timer1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
@@ -294,63 +209,6 @@ mEnd      ret</value>
   <metadata name="menuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>452, 17</value>
   </metadata>
-  <data name="textZX7.Text" xml:space="preserve">
-    <value>ld de,16384
-ld hl,bitmap
-call dzx7_standard
-jp goraster
-dzx7_standard:
-ld      a, $80
-dzx7s_copy_byte_loop:
-ldi 
-dzx7s_main_loop:
-call    dzx7s_next_bit
-jr      nc, dzx7s_copy_byte_loop 
-push    de
-ld      bc, 0
-ld      d, b
-dzx7s_len_size_loop:
-inc     d
-call    dzx7s_next_bit
-jr      nc, dzx7s_len_size_loop
-dzx7s_len_value_loop:
-call    nc, dzx7s_next_bit
-rl      c
-rl      b
-jr      c, dzx7s_exit 
-dec     d
-jr      nz, dzx7s_len_value_loop
-inc     bc                    
-ld      e, (hl)                
-inc     hl
-defb    $cb, $33                
-jr      nc, dzx7s_offset_end   
-ld      d, $10                  
-dzx7s_rld_next_bit:
-call    dzx7s_next_bit
-rl      d                      
-jr      nc, dzx7s_rld_next_bit  
-inc     d                      
-srl	d			
-dzx7s_offset_end:
-rr      e                      
-ex      (sp), hl              
-push    hl                    
-sbc     hl, de               
-pop     de                  
-ldir
-dzx7s_exit:
-pop     hl                     
-jr      nc, dzx7s_main_loop
-dzx7s_next_bit:
-add     a, a                  
-ret     nz                     
-ld      a, (hl)                
-inc     hl
-rla
-ret
-</value>
-  </data>
   <data name="txtZX0.Text" xml:space="preserve">
     <value>ld de,16384
 ld hl,bitmap
